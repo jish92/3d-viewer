@@ -65,6 +65,13 @@
    "note": "Original fictional athletic woman swimmer: MPFB2/MakeHuman-parametric adult female body, navy racing one-piece (thin spaghetti straps, scoop front, racerback, competition leg cut, small US flag patch on the chest, no logos), hair in a bun, swim slides; no cap/goggles. Rigged with the 17-bone skeleton + 2 chest helper bones and 2 glute helper bones (damped-spring secondary motion); clips Walk, Run, MotionBricks (female-gait adjusted retarget); autoplays MotionBricks; meshopt"
   },
   {
+   "id": "yoga-squat",
+   "label": "Yoga: Deep Squat (malasana)",
+   "url": "models/swimmer-yoga.glb",
+   "anim": "Yoga_DeepSquat",
+   "note": "Swimmer one-piece model in a 9 s looping yoga Deep Squat (malasana): eases from standing into a full squat with prayer hands, holds ~2.4 s with gentle breathing, returns. Feet planted by IK (no sliding), subtle bust/glute spring bones; autoplays and loops forever. Same GLB also holds Walk, Run, MotionBricks; meshopt"
+  },
+  {
    "id": "textured",
    "label": "Jackson - Hunyuan3D textured",
    "url": "models/jackson-hunyuan3d-textured.glb",
