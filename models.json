@@ -31,6 +31,18 @@
       "note": "Rigged v4 (17-bone humanoid skeleton, weighted to the T-shirt/shorts body, head rigid) with a looping 2.4 s walk-in-place animation; plays automatically, meshopt"
     },
     {
+      "id": "swim",
+      "label": "Jackson, swim brief",
+      "url": "models/jackson-swim-brief.glb",
+      "note": "Olympic-style swimmer: sculpted bare athletic torso/arms/legs, navy competition brief with red/white trim, swim slides; same head as v4 (no cap/goggles); rigged (17 bones) with looping 2.4 s walk, autoplays; ~100k-face body, meshopt"
+    },
+    {
+      "id": "jammer",
+      "label": "Jackson, jammers",
+      "url": "models/jackson-swim-jammer.glb",
+      "note": "Olympic-style swimmer: sculpted bare athletic torso/arms/legs, navy knee-length competition jammers with red side stripe and white trim, swim slides; same head as v4 (no cap/goggles); rigged (17 bones) with looping 2.4 s walk, autoplays; ~100k-face body, meshopt"
+    },
+    {
       "id": "textured",
       "label": "Jackson - Hunyuan3D textured",
       "url": "models/jackson-hunyuan3d-textured.glb",

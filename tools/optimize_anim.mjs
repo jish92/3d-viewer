@@ -26,4 +26,6 @@ const dropNormals = (doc) => { for (const mesh of doc.getRoot().listMeshes()) fo
 // Skinned/animated variant: weld + smooth normals + meshopt compression. No simplify and no quantize (KHR_mesh_quantization is not applied to skinned positions).
 await doc.transform(dropNormals, weld(), smoothNormals, meshopt({encoder: MeshoptEncoder, level:'high'}));
 for (const m of doc.getRoot().listMaterials()) { if (!m.getMetallicRoughnessTexture()) m.setRoughnessFactor(0.75).setMetallicFactor(0); }
+if (process.env.DROP_MR) { for (const m of doc.getRoot().listMaterials()) { if (m.getMetallicRoughnessTexture()) { m.setMetallicRoughnessTexture(null); m.setRoughnessFactor(+process.env.DROP_MR).setMetallicFactor(0); } }
+  const { prune } = await import('@gltf-transform/functions'); await doc.transform(prune()); }
 await io.write(out, doc);
