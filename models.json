@@ -1,6 +1,12 @@
 {
   "models": [
     {
+      "id": "fullbody",
+      "label": "Jackson - Full body",
+      "url": "models/jackson-fullbody.glb",
+      "note": "Textured torso/head + vertex-colored legs, meshopt (legs decimated to 40%)"
+    },
+    {
       "id": "textured",
       "label": "Jackson - Hunyuan3D textured",
       "url": "models/jackson-hunyuan3d-textured.glb",

@@ -2,7 +2,8 @@ import { NodeIO } from '@gltf-transform/core';
 import { EXTMeshoptCompression, KHRMeshQuantization } from '@gltf-transform/extensions';
 import { weld, simplify, normals, quantize, meshopt, dedup, prune } from '@gltf-transform/functions';
 import { MeshoptEncoder, MeshoptSimplifier, MeshoptDecoder } from 'meshoptimizer';
-const [,, inp, out, ratio] = process.argv;
+const [,, inp, out, ratio, keepArg] = process.argv; // keepArg: comma-separated mesh names NOT to simplify
+const keep = new Set((keepArg||'').split(',').filter(Boolean));
 await MeshoptEncoder.ready; await MeshoptSimplifier.ready; await MeshoptDecoder.ready;
 const io = new NodeIO().registerExtensions([EXTMeshoptCompression, KHRMeshQuantization]).registerDependencies({'meshopt.encoder': MeshoptEncoder,'meshopt.decoder': MeshoptDecoder});
 const doc = await io.read(inp);
@@ -23,9 +24,19 @@ const smoothNormals = (doc) => {
   }
 };
 const steps = [weld()];
-if (+ratio < 1) steps.push(simplify({ simplifier: MeshoptSimplifier, ratio: +ratio, error: 0.01, lockBorder: false }));
+if (+ratio < 1) {
+  steps.push(async (doc) => { // temporarily mark meshes to keep so simplify skips them
+    globalThis.__saved = [];
+    for (const m of doc.getRoot().listMeshes()) if (keep.has(m.getName())) for (const p of m.listPrimitives()) { globalThis.__saved.push([p, p.getMode()]); p.setMode(2); } // non-triangle mode => simplify skips it
+  });
+  steps.push(simplify({ simplifier: MeshoptSimplifier, ratio: +ratio, error: 0.01, lockBorder: false }));
+  steps.push(async () => { for (const [p, mode] of globalThis.__saved) p.setMode(mode); });
+}
 steps.push(smoothNormals, quantize({quantizePosition:14, quantizeNormal:10, quantizeColor:8, quantizeTexcoord:14}), meshopt({encoder: MeshoptEncoder, level:'high'}));
 await doc.transform(...steps);
 // nicer default material
 for (const m of doc.getRoot().listMaterials()) { if (!m.getMetallicRoughnessTexture()) m.setRoughnessFactor(0.75).setMetallicFactor(0); }
+// primitives without a material get a matte default (so vertex colors render nicely)
+{ const mat = doc.createMaterial('default').setRoughnessFactor(0.75).setMetallicFactor(0);
+  for (const m of doc.getRoot().listMeshes()) for (const p of m.listPrimitives()) if (!p.getMaterial()) p.setMaterial(mat); }
 await io.write(out, doc);
