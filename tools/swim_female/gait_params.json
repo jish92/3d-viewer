@@ -1,0 +1,50 @@
+{
+ "walk_ankle_in": 0.4,
+ "run_ankle_in": 0.5,
+ "walk_cycle_frames": 34,
+ "run_cycle_frames": 21,
+ "stride_factor": 0.93,
+ "walk_sway": 1.0,
+ "run_sway": 1.0,
+ "walk": {
+  "yaw": 4.8,
+  "roll": 2.8,
+  "spine_yaw": 0.85,
+  "chest_yaw": 0.95,
+  "spine_roll": 0.7,
+  "chest_roll": 0.5,
+  "arm_swing": 21,
+  "arm_add": 27,
+  "elbow_add": 3
+ },
+ "run": {
+  "yaw": 8.4,
+  "roll": 2.8,
+  "spine_yaw": 0.85,
+  "chest_yaw": 1.0,
+  "spine_roll": 0.75,
+  "chest_roll": 0.5,
+  "arm_swing": 40,
+  "arm_add": 41,
+  "elbow_add": 20
+ },
+ "mb": {
+  "stride": 0.93,
+  "narrow_m": 0.007,
+  "pelvis_yaw_gain": 1.6,
+  "pelvis_tilt_extra_deg": 1.6,
+  "spine_counter_yaw": 0.15,
+  "chest_counter_yaw": 0.3,
+  "spine_counter_roll": 0.45,
+  "chest_counter_roll": 0.7,
+  "upper_arm_in_deg": 4.0,
+  "forearm_in_deg": 3.0
+ },
+ "bust": {
+  "freq_hz": 4.0,
+  "zeta": 0.45,
+  "peak_run_m": 0.007,
+  "walk_rel": 3.6,
+  "peak_walk_m": 0.0015
+ }
+}
