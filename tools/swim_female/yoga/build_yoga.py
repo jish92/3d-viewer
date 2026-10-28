@@ -1,3 +1,4 @@
+import copy
 # usage: blender --python build_yoga.py -- out.blend [clip names...]
 import bpy,sys,os,json,numpy as np,math
 sys.path.insert(0,'/workspace/me3d/swim_female/yoga')
@@ -144,7 +145,9 @@ for key in WANT:
     else:
         clip=getattr(yclipdefs,'clip_'+key)(rig,rest)
         LIFT=None
-        if os.environ.get('FOOTPASS'): foot_pass(clip)
+        if os.environ.get('STATIC'):
+            Pt=clip.P(float(os.environ['STATIC'])); clip=yclips.Clip(clip.name,[(0,Pt,None),(0.5,copy.deepcopy(Pt),None)],(0,0.5),breath=0)
+        elif os.environ.get('FOOTPASS'): foot_pass(clip)
     N=clip.frames(); name=clip.name
     act=bpy.data.actions.new(name); arm.animation_data.action=act
     for t in arm.animation_data.nla_tracks: t.mute=True

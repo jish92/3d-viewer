@@ -130,3 +130,44 @@ def puppy(rig,rest,pz=-0.30,py=0.475,hand_x=0.20,wy=0.076,zw_off=0.80,th=None,fo
             Q['arm'+sd]=dict(mode='world',wrist=np.array([s*hand_x,wy,zw]),pole=nrm([s,0.4,0]),hand=np.array([0,0,1.]),palm=np.array([0,-1,0.]))
         return Q
     return build(th if th is not None else 112)
+
+def child(rig,rest,pz=-0.30,back=0.10,py=0.30,kpole=0.3,hand_x=0.19,wy=0.076,th=None,foot_x=0.11,hips=84,neck_add=18,head_add=22,arm_k=0.985,spine_k=0.97):
+    P=kneel_upright(rig,rest,pz,foot_x,None,0.475)
+    P['pelvis']=np.array([0,py,pz-0.408+back])
+    for sd in 'LR': P['leg'+sd]['pole']=nrm([0,kpole,1])
+    Lm=(rig.L['UpperArm.L']+rig.L['LowerArm.L'])*arm_k
+    t=th if th is not None else 94
+    Q=copyP(P); Q.update(torso_pitch(t,hips/t,spine_k,neck_add,head_add)); Q['hips']=(0,hips,0)
+    D,pos,info=rig.solve(Q); sh=pos['UpperArm.L']; dyy=sh[1]-wy; dzz=math.sqrt(max(Lm**2-dyy*dyy,1e-6)); zw=sh[2]+dzz
+    for sd,s in (('L',1),('R',-1)):
+        Q['arm'+sd]=dict(mode='world',wrist=np.array([s*hand_x,wy,zw]),pole=nrm([s,0.4,0]),hand=np.array([0,0,1.]),palm=np.array([0,-1,0.]))
+    return Q
+
+# ---------------------------------------------------------------- happy baby (lying on back)
+def lying_base(rig,rest,P,py,pz,th=-90,hips=0.93,neck_add=12,head_add=10):
+    Q=copyP(P); Q['pelvis']=np.array([0,py,pz]); Q.update(torso_pitch(th,hips,0.98,neck_add,head_add)); return Q
+def hb_legs(P,ank,pole,pitch=168,foot_x=0.0):
+    for sd,s in (('L',1),('R',-1)):
+        P['leg'+sd]=dict(ankle=np.array([s*ank[0],ank[1],ank[2]]),pole=nrm([s*pole[0],pole[1],pole[2]]),yaw=0,pitch=pitch,roll=s*8)
+    return P
+def hb_arms_world(rig,Q,wr,pole,palm=(0,-1,0.)):
+    for sd,s in (('L',1),('R',-1)):
+        Q['arm'+sd]=dict(mode='world',wrist=np.array([s*wr[0],wr[1],wr[2]]),pole=nrm([s*pole[0],pole[1],pole[2]]),hand=np.array([0,0,1.]),palm=np.array(palm))
+    return Q
+def happybaby(rig,rest,py=0.13,pz=-0.25,ank=(0.28,0.62,-0.47),pole=(0.9,0.5,-0.7),wr=(0.31,0.62,-0.47),apole=(1,-0.3,0.2),pitch=168):
+    S=base_stance(rig,rest,0.11,0,0)
+    Q=lying_base(rig,rest,S,py,pz)
+    hb_legs(Q,ank,pole,pitch)
+    hb_arms_world(rig,Q,wr,apole,palm=(0,0,-1.))
+    return Q
+def hb_sit(rig,rest,py=0.10,pz=-0.25):
+    S=base_stance(rig,rest,0.11,0,0)
+    Q=lying_base(rig,rest,S,py,pz,th=-20,hips=0.9,neck_add=15,head_add=10)
+    hb_legs(Q,(0.18,0.097,0.0),(0.2,1,0.5),pitch=0)
+    hb_arms_world(rig,Q,(0.20,0.04,-0.55),(1,0.2,-0.5),palm=(0,1,0.))
+    return Q
+def hb_lie(rig,rest,py=0.11,pz=-0.25):
+    Q=hb_sit(rig,rest,py,pz); S=base_stance(rig,rest,0.11,0,0)
+    Q.update(torso_pitch(-90,0.93,0.98,12,10))
+    hb_arms_world(rig,Q,(0.26,0.05,-0.95),(1,0.3,0),palm=(0,1,0.))
+    return Q

@@ -44,3 +44,28 @@ def clip_puppy(rig,rest,**kw):
     K3=copy.deepcopy(K2); K3['legL']=dict(S1['legL']); K3=yp.arms_down_world(rig,K3)
     keys,h=there_and_back([(0,S0,None),(0.6,S0,None),(1.8,K1,{'legR':0.14}),(1.5,K2,None),(1.5,K3,{'legL':0.14}),(2.4,S1,{'armL':0.06,'armR':0.06})],2.6)
     return Clip('Yoga_PuppyPose',keys,h,breath=0.8)
+
+def clip_child(rig,rest,**kw):
+    S1=yp.child(rig,rest,**kw)
+    S0=yp.base_stance(rig,rest,0.11,0,0);     S0=yp.arms_down_world(rig,S0)
+    pz=-0.30
+    K1=copy.deepcopy(S0); K1['pelvis']=np.array([0,0.62,pz]); K1['hips']=(0,8,0); K1['spine']=(0,10,0); K1['chest']=(0,6,0)
+    K1['legR']=dict(ankle=np.array([-0.11,0.14,pz-0.408]),pole=nrm([0,-0.1,1]),yaw=0,pitch=60,roll=0)
+    K1['legL']=dict(S0['legL']); K1['legL']['pole']=nrm([0,0.2,1])
+    K1=yp.arms_down_world(rig,K1)
+    K2=copy.deepcopy(K1); K2['pelvis']=np.array([0,0.475,pz]); K2['legR']=dict(yp.kneel_upright(rig,rest,pz)['legR']); K2['legL']['pole']=nrm([0,0.3,1])
+    K2=yp.arms_down_world(rig,K2)
+    K3=yp.kneel_upright(rig,rest,pz); K3=yp.arms_down_world(rig,K3)
+    for sd in 'LR': K3['leg'+sd]['pole']=nrm([0,0.3,1])
+    K3b=copy.deepcopy(K3); K3b['pelvis']=np.array([0,0.40,-0.62]); K3b['hips']=(0,40,0); K3b['spine']=(0,45,0); K3b['chest']=(0,50,0)
+    keys,h=there_and_back([(0,S0,None),(0.6,S0,None),(1.8,K1,{'legR':0.14}),(1.5,K2,None),(1.5,K3,{'legL':0.14}),(0.9,K3b,None),(1.7,S1,{'armL':0.06,'armR':0.06})],2.6)
+    return Clip('Yoga_Child',keys,h,breath=0.7)
+
+def clip_happybaby(rig,rest,**kw):
+    S1=yp.happybaby(rig,rest,**kw)
+    S0=yp.base_stance(rig,rest,0.11,0,0);     S0=yp.arms_down_world(rig,S0)
+    Qs=yp.squat(rig,rest,py=0.30,pz=-0.10,foot_x=0.18,toe=10,knee_yaw=10,hip=(0,70,0),spine=(0,30,0),chest=(0,15,0))
+    Qs=yp.arms_down_world(rig,Qs)
+    K1=yp.hb_sit(rig,rest); K2=yp.hb_lie(rig,rest)
+    keys,h=there_and_back([(0,S0,None),(0.6,S0,None),(1.8,Qs,None),(1.4,K1,None),(1.4,K2,None),(2.2,S1,None)],2.6)
+    return Clip('Yoga_HappyBaby',keys,h,breath=0.7)
