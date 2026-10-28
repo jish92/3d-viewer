@@ -47,7 +47,7 @@ def warrior_stand(rig,rest,**kw):
     S['legL']=dict(P['legL']); S['legR']=dict(P['legR'])
     return S
 # ---------------------------------------------------------------- 3 tree
-def tree(rig,rest,px=0.045,stand_x=0.10,ankle=(-0.015,0.76,0.04),knee_out=-1.0,roll=80,pitch=35,arms='up'):
+def tree(rig,rest,px=0.045,stand_x=0.10,ankle=(-0.012,0.80,0.0),knee_out=-1.0,roll=80,pitch=35,arms='up'):
     P=rest_chest_arms(rig,rest)
     S=stand_x
     aL=rest['legL']['ankle'].copy(); aL[0]=S

@@ -103,6 +103,20 @@
    "url": "models/swimmer-yoga-puppy.glb",
    "anim": "Yoga_PuppyPose",
    "note": "Swimmer in a looping Puppy pose: stands, kneels with knees hip-width and thighs vertical, walks the hands forward and lowers chest and forehead toward the floor with hips high, holds with gentle breathing and a soft relaxed smile (morph target), then returns to standing. Knees and feet planted by IK; autoplays and loops; best viewed from the side or 3/4 front; meshopt"
+  },
+  {
+   "id": "yoga-downdog",
+   "label": "Yoga: Downward Dog (Adho Mukha Svanasana)",
+   "url": "models/swimmer-yoga-downdog.glb",
+   "anim": "Yoga_DownwardDog",
+   "note": "Swimmer in a looping Downward Dog: stands, folds forward, walks the hands out and lifts the hips into an inverted V with long straight arms and legs, holds with gentle breathing and a soft relaxed smile (morph target), then walks back to standing. Hands and feet planted by IK; autoplays and loops; best viewed from the side or 3/4; meshopt"
+  },
+  {
+   "id": "yoga-tree",
+   "label": "Yoga: Tree Pose (Vrksasana)",
+   "url": "models/swimmer-yoga-tree.glb",
+   "anim": "Yoga_Tree",
+   "note": "Swimmer in a looping Tree pose: shifts onto the left leg, places the right foot high on the inner thigh with the knee turned out, raises the palms together overhead, holds with gentle breathing and a soft relaxed smile (morph target), then lowers back to standing. Standing foot planted by IK; autoplays and loops; best viewed from the front or 3/4; meshopt"
   }
  ]
 }
