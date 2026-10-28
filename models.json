@@ -7,6 +7,12 @@
       "note": "Textured torso/head + vertex-colored legs, meshopt (legs decimated to 40%)"
     },
     {
+      "id": "tshirt",
+      "label": "Jackson - T-shirt & shorts",
+      "url": "models/jackson-tshirt-shorts.glb",
+      "note": "Textured head + vertex-colored generic T-shirt/shorts body (AI-generated mannequin body, not a scan), meshopt (body decimated to 50%)"
+    },
+    {
       "id": "textured",
       "label": "Jackson - Hunyuan3D textured",
       "url": "models/jackson-hunyuan3d-textured.glb",
