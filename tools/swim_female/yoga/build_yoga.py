@@ -59,7 +59,16 @@ def spring(z,F0,Z,dt=1/30.,sub=4):
     return np.array(res[3*n:4*n])
 report={}
 import yk
-KIMO={'ksquat':('Yoga_DeepSquat','/workspace/me3d/kim_out/squat.npz',lambda:yk.squat_arms(rig,rest))}
+KO='/workspace/me3d/kim_out/'
+KIMO={'ksquat':('Yoga_DeepSquat',KO+'squat.npz',lambda:yk.squat_arms(rig,rest)),
+ 'kwarrior2':('Yoga_WarriorII',KO+'warrior2.npz',lambda:None),'kdowndog':('Yoga_DownwardDog',KO+'downdog.npz',lambda:None),
+ 'kpuppy':('Yoga_Puppy',KO+'puppy.npz',lambda:None),'khappybaby':('Yoga_HappyBaby',KO+'happybaby.npz',lambda:None),
+ 'ktree':('Yoga_Tree',KO+'tree.npz',lambda:None),'kchild':('Yoga_Child',KO+'child.npz',lambda:None)}
+if os.environ.get('SMILE'):
+    add_smile(body); body.data.shape_keys.key_blocks['Smile'].value=1.0
+if os.environ.get('PURGE'):
+    for a in list(bpy.data.actions): bpy.data.actions.remove(a)
+    for t in list(arm.animation_data.nla_tracks): arm.animation_data.nla_tracks.remove(t)
 def floor_pass(clip,iters=2):
     # lift/lower whole body per frame so the lowest mesh vertex touches z=0 (keeps feet planted on the floor)
     N=clip.frames(); dz=np.zeros(N)
@@ -77,9 +86,41 @@ def floor_pass(clip,iters=2):
         for f in range(N):
             clip.Ps[f]['pelvis']=clip.Ps[f]['pelvis']+np.array([0,d[f],0])
             for sd in 'LR': clip.Ps[f]['leg'+sd]['ankle']=clip.Ps[f]['leg'+sd]['ankle']+np.array([0,d[f],0])
+def setpose(P):
+    D,pos,info=rig.solve(P); bs,loc=basis_h(D,P['pelvis'])
+    for n,Rm in bs.items():
+        pb=arm.pose.bones[n]; pb.rotation_mode='QUATERNION'; pb.rotation_quaternion=Matrix(Rm.tolist()).to_quaternion()
+        if n=='Hips': pb.location=Vector(loc)
+def arm_pass(clip,thr=0.010,iters=4,step=0.012):
+    N=clip.frames(); tg=np.concatenate([bodyonly,legL,legR]); off=np.zeros((N,2,3)); step_v=[np.array([1,0,0.]),np.array([0,0,1.]),np.array([0.7,0.3,0.7])]
+    def apply(f,o):
+        P=copy.deepcopy(clip.Ps[f])
+        for i,sd in enumerate('LR'):
+            sg=1 if sd=='L' else -1; a=P['arm'+sd]; a['wrist']=a['wrist']+o[i]*np.array([sg,1,1.]); a['pole']=a['pole']+0.0
+        return P
+    def pen_f(f,o):
+        setpose(apply(f,o)); co,nn=evalmesh(); return pen(co,nn,armtest,tg)
+    import copy
+    for it in range(iters):
+        bad=0
+        for f in range(N):
+            p0=pen_f(f,off[f])
+            if p0<=thr: continue
+            bad+=1; best=(p0,None)
+            for v in step_v:
+                o=off[f].copy(); o[0]=o[0]+v*step; o[1]=o[1]+v*step
+                p=pen_f(f,o)
+                if p<best[0]: best=(p,o)
+            if best[1] is not None: off[f]=best[1]
+        # smooth offsets in time
+        k=4; pad=np.concatenate([np.repeat(off[:1],k,0),off,np.repeat(off[-1:],k,0)]); off=np.stack([np.convolve(pad[:,i,j],np.ones(2*k+1)/(2*k+1),'valid') for i in range(2) for j in range(3)],1).reshape(N,2,3)
+        print('arm pass',it,'bad frames',bad)
+        if bad==0: break
+    for f in range(N): clip.Ps[f]=apply(f,off[f])
 for key in WANT:
     if key in KIMO:
         nm,npz,bf=KIMO[key]; clip,kinfo=yk.make(nm,npz,rig,rest,blend_fn=bf()); print('kimo',kinfo['k'],kinfo['ka'],clip.hold); floor_pass(clip)
+        if os.environ.get('ARMPASS'): arm_pass(clip)
     else: clip=getattr(yclipdefs,'clip_'+key)(rig,rest)
     N=clip.frames(); name=clip.name
     act=bpy.data.actions.new(name); arm.animation_data.action=act

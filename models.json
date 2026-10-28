@@ -89,6 +89,13 @@
    "label": "Jackson - TripoSR",
    "url": "models/jackson-triposr.glb",
    "note": "TripoSR upper body"
+  },
+  {
+   "id": "yoga-warrior2",
+   "label": "Yoga: Warrior II (Virabhadrasana II)",
+   "url": "models/swimmer-yoga-warrior2.glb",
+   "anim": "Yoga_WarriorII",
+   "note": "Swimmer in a looping Warrior II: steps wide, front knee bent over the ankle, arms extended, gaze over the front hand, holds with gentle breathing and a soft relaxed smile (morph target), returns to standing. Feet planted by IK, subtle bust/glute spring bones; autoplays and loops. Hand-posed (Kimodo did not produce a wide stance); meshopt"
   }
  ]
 }
