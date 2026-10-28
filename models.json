@@ -124,6 +124,13 @@
    "url": "models/swimmer-yoga-child.glb",
    "anim": "Yoga_Child",
    "note": "Swimmer in a looping Child's pose: lowers from standing through a lunge to kneeling, sits back toward her heels, folds forward with arms extended and forehead toward the floor, holds with gentle breathing and a soft relaxed smile (morph target), then returns to standing. Hand-posed with IK; autoplays and loops; best viewed from the side or 3/4; meshopt"
+  },
+  {
+   "id": "yoga-happybaby",
+   "label": "Yoga: Happy Baby (Ananda Balasana)",
+   "url": "models/swimmer-yoga-happybaby.glb",
+   "anim": "Yoga_HappyBaby",
+   "note": "Swimmer in a looping Happy Baby pose: squats, sits, rolls back onto the floor, draws both knees wide toward the armpits and holds the outer edges of the feet with soles to the ceiling, gentle breathing and a soft relaxed smile (morph target), then returns to standing. Hand-posed with IK; autoplays and loops; view from the head end (3/4 or side); meshopt"
   }
  ]
 }
