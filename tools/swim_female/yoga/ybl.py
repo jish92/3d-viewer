@@ -85,7 +85,7 @@ def smooth_hip_weights(body,iters=10,y0=0.70,y1=0.97,lam=0.5):
     spring=np.array([nm.startswith(('Bust','Glute')) for nm in names])
     col=np.empty(n*4); me.color_attributes['Col'].data.foreach_get('color',col); col=col.reshape(-1,4)[:,:3]
     V=np.array([v.co[:] for v in me.vertices]); z=V[:,2]
-    skin=(col[:,0]>0.45)&(col[:,0]>col[:,2]*1.5); suit=(col[:,0]<0.1)&(col[:,2]>0.05)&(col[:,2]>col[:,0]*3)
+    skin=(col[:,0]>0.45)&(col[:,0]>col[:,2]*1.5); suit=(col[:,0]<0.05)&(col[:,2]>0.02)&(col[:,2]>col[:,0]*2.5)
     E=np.empty(len(me.edges)*2,int); me.edges.foreach_get('vertices',E); E=E.reshape(-1,2)
     keep=skin[E[:,0]]&skin[E[:,1]]; E=E[keep]
     A=sp.coo_matrix((np.ones(len(E)),(E[:,0],E[:,1])),shape=(n,n)); A=(A+A.T).tocsr(); A.data[:]=1; deg=np.asarray(A.sum(1)).ravel(); deg[deg==0]=1
@@ -148,3 +148,46 @@ def add_smile(body,name='Smile',amt=1.0,MZ=1.557,MLIFT=0.0065,CLIFT=0.0040):
     co=(V+D*amt).reshape(-1); kb.data.foreach_set('co',co); kb.value=0.0
     kb.slider_max=1.5
     return kb,dict(eye_z=ez,eye_x=ex,moved=int((np.abs(D).sum(1)>1e-5).sum()),max_mm=float(np.abs(D).max()*1000))
+
+def add_leg_helpers(arm,body,kb=0.5,hb=0.5,ks=0.075,hs=0.07):
+    """extra (rotation-bisecting) helper bones at knees and hips: UpperLeg_Knee.S (child of UpperLeg, pivot at knee) and UpperLeg_Hip.S (child of Hips, pivot at hip); weights taken from the neighbouring bones"""
+    import numpy as np
+    bpy.context.view_layer.objects.active=arm; bpy.ops.object.mode_set(mode='EDIT'); eb=arm.data.edit_bones
+    for sd in 'LR':
+        for nm,par,hd in (('UpperLeg_Knee.'+sd,'UpperLeg.'+sd,eb['LowerLeg.'+sd].head.copy()),('UpperLeg_Hip.'+sd,'Hips',eb['UpperLeg.'+sd].head.copy())):
+            b=eb.new(nm); P=eb[par]; d=(P.tail-P.head).normalized()
+            b.head=hd; b.tail=hd+d*0.06; b.roll=P.roll; b.parent=P; b.use_connect=False; b.use_deform=True
+    bpy.ops.object.mode_set(mode='POSE')
+    me=body.data; n=len(me.vertices); V=np.array([v.co[:] for v in me.vertices]); z=V[:,2]; x=V[:,0]
+    names=[g.name for g in body.vertex_groups]; gi={g.index:i for i,g in enumerate(body.vertex_groups)}
+    W=np.zeros((n,len(names)+4))
+    for v in me.vertices:
+        for e in v.groups: W[v.index,gi[e.group]]=e.weight
+    ix=lambda s:names.index(s)
+    new=[]
+    for sd in 'LR':
+        ul,ll,hp=ix('UpperLeg.'+sd),ix('LowerLeg.'+sd),ix('Hips'); ulo=ix('UpperLeg.'+('R' if sd=='L' else 'L'))
+        sg=1 if sd=='L' else -1
+        # knee: take a bell-shaped share of UL+LL mass
+        kz=arm.data.bones['LowerLeg.'+sd].head_local[2]; hz=arm.data.bones['UpperLeg.'+sd].head_local[2]
+        bell=np.exp(-((z-kz)/ks)**2)*(x*sg>0.02)
+        m=W[:,ul]+W[:,ll]; f=kb*bell; h=f*m
+        s=np.maximum(m,1e-9); W[:,ul]-=h*W[:,ul]/s; W[:,ll]-=h*W[:,ll]/s; kcol=h
+        # hip: share of this-side UL and the sided part of Hips, near the hip joint
+        side=np.clip(0.5+x*sg/0.06,0,1); bellh=np.exp(-((z-hz)/hs)**2)
+        mh=W[:,ul]+W[:,hp]*side; hh=hb*bellh*mh; s2=np.maximum(mh,1e-9)
+        a=hh*W[:,ul]/s2; b=hh*W[:,hp]*side/s2
+        W[:,ul]-=a; W[:,hp]-=b
+        new+=[('UpperLeg_Knee.'+sd,kcol),('UpperLeg_Hip.'+sd,a+b)]
+    for nm,col in new:
+        g=body.vertex_groups.new(name=nm)
+        for v in np.where(col>1e-4)[0]: g.add([int(v)],float(col[v]),'REPLACE')
+    for j,nm in enumerate(names):
+        g=body.vertex_groups[nm]
+        for v in np.where(W[:,j]>1e-4)[0]: g.add([int(v)],float(W[v,j]),'REPLACE')
+        for v in np.where((W[:,j]<=1e-4))[0]:
+            pass
+    # clear stale tiny weights
+    for j,nm in enumerate(names):
+        g=body.vertex_groups[nm]; zero=np.where(W[:,j]<=1e-4)[0]
+        if len(zero): g.remove([int(v) for v in zero])

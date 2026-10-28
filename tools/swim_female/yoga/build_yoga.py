@@ -10,6 +10,15 @@ arm=get_arm(); body=get_body(); rig=build_rig(arm); rest=rest_params(rig)
 bpy.context.view_layer.objects.active=arm; bpy.ops.object.mode_set(mode='POSE'); clear_nla(arm)
 for t in arm.animation_data.nla_tracks: t.mute=False
 smooth_hip_weights(body,iters=10)
+add_leg_helpers(arm,body)
+from scipy.spatial.transform import Rotation as _R, Slerp as _S
+def _mid(A,B): return _S([0,1],_R.from_matrix([A,B]))([0.5]).as_matrix()[0]
+def basis_h(D,pelvis):
+    bs,loc=rig.basis(D,pelvis); Db={n:C@D[n]@C.T for n in D}
+    for sd in 'LR':
+        for nm,par,ch in (('UpperLeg_Knee.'+sd,'UpperLeg.'+sd,'LowerLeg.'+sd),('UpperLeg_Hip.'+sd,'Hips','UpperLeg.'+sd)):
+            Rcr=rig.Rrest_b[par]; Dm=_mid(Db[par],Db[ch]); bs[nm]=Rcr.T@Db[par].T@Dm@Rcr
+    return bs,loc
 G=json.load(open('/workspace/me3d/swim_female/gait_params.json'))
 GS=group_sets(body)
 nv=len(body.data.vertices); gname={g.index:g.name for g in body.vertex_groups}
@@ -49,8 +58,29 @@ def spring(z,F0,Z,dt=1/30.,sub=4):
         res.append(d)
     return np.array(res[3*n:4*n])
 report={}
+import yk
+KIMO={'ksquat':('Yoga_DeepSquat','/workspace/me3d/kim_out/squat.npz',lambda:yk.squat_arms(rig,rest))}
+def floor_pass(clip,iters=2):
+    # lift/lower whole body per frame so the lowest mesh vertex touches z=0 (keeps feet planted on the floor)
+    N=clip.frames(); dz=np.zeros(N)
+    for it in range(iters):
+        mz=np.zeros(N)
+        for f in range(N):
+            P=clip.Ps[f]; D,pos,info=rig.solve(P); bs,loc=basis_h(D,P['pelvis'])
+            for n,Rm in bs.items():
+                pb=arm.pose.bones[n]; pb.rotation_mode='QUATERNION'; pb.rotation_quaternion=Matrix(Rm.tolist()).to_quaternion()
+                if n=='Hips': pb.location=Vector(loc)
+            co,_=evalmesh(); mz[f]=co[:,2].min()
+        k=3; pad=np.concatenate([np.repeat(mz[:1],k),mz,np.repeat(mz[-1:],k)]); mzs=np.convolve(pad,np.ones(2*k+1)/(2*k+1),'valid')
+        d=-np.minimum(mzs,mz)+0*mz if False else -(mzs)
+        print('floor pass',it,'minz range',mz.min(),mz.max())
+        for f in range(N):
+            clip.Ps[f]['pelvis']=clip.Ps[f]['pelvis']+np.array([0,d[f],0])
+            for sd in 'LR': clip.Ps[f]['leg'+sd]['ankle']=clip.Ps[f]['leg'+sd]['ankle']+np.array([0,d[f],0])
 for key in WANT:
-    clip=getattr(yclipdefs,'clip_'+key)(rig,rest)
+    if key in KIMO:
+        nm,npz,bf=KIMO[key]; clip,kinfo=yk.make(nm,npz,rig,rest,blend_fn=bf()); print('kimo',kinfo['k'],kinfo['ka'],clip.hold); floor_pass(clip)
+    else: clip=getattr(yclipdefs,'clip_'+key)(rig,rest)
     N=clip.frames(); name=clip.name
     act=bpy.data.actions.new(name); arm.animation_data.action=act
     for t in arm.animation_data.nla_tracks: t.mute=True
@@ -58,7 +88,7 @@ for key in WANT:
     for f in range(N):
         P=clip.P(f/yclips.FPS)
         D,pos,info=rig.solve(P)
-        bs,loc=rig.basis(D,P['pelvis'])
+        bs,loc=basis_h(D,P['pelvis'])
         for n,Rm in bs.items():
             pb=arm.pose.bones[n]; pb.rotation_mode='QUATERNION'; q=Matrix(Rm.tolist()).to_quaternion()
             if n in prevq: q.make_compatible(prevq[n])

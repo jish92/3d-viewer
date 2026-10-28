@@ -39,12 +39,12 @@ class Rig:
     def solve(s,P):
         """P: dict of parameters -> (dict bone->Rdelta_g, hips_pos_g, info)"""
         D={}; pos={}; info={}
-        D['Hips']=Eul(*P.get('hips',(0,0,0))); pos['Hips']=np.asarray(P['pelvis'],float)
+        D['Hips']=P['Rhips'] if 'Rhips' in P else Eul(*P.get('hips',(0,0,0))); pos['Hips']=np.asarray(P['pelvis'],float)
         def child(n,par): pos[n]=pos[par]+D[par]@(s.head[n]-s.head[par])
         for n,par,key in (('Spine','Hips','spine'),('Chest','Spine','chest')):
-            child(n,par); D[n]=Eul(*P.get(key,(0,0,0)))
-        child('Neck','Chest'); D['Neck']=Eul(*P.get('neck',(0,0,0)))
-        child('Head','Neck'); D['Head']=Eul(*P.get('head',(0,0,0)))
+            child(n,par); D[n]=P['R'+key] if ('R'+key) in P else Eul(*P.get(key,(0,0,0)))
+        child('Neck','Chest'); D['Neck']=P['Rneck'] if 'Rneck' in P else Eul(*P.get('neck',(0,0,0)))
+        child('Head','Neck'); D['Head']=P['Rhead'] if 'Rhead' in P else Eul(*P.get('head',(0,0,0)))
         for sd in 'LR':
             # legs
             ul,ll,ft='UpperLeg.'+sd,'LowerLeg.'+sd,'Foot.'+sd
@@ -55,7 +55,7 @@ class Rig:
             dU=nrm(K-H); dL=nrm(A2-K)
             D[ul]=aimR(s.d0[ul],s.s0[ul],dU,pp); D[ll]=aimR(s.d0[ll],s.s0[ll],dL,pp)
             pos[ll]=K; pos[ft]=A2
-            D[ft]=Ry(math.radians(LG.get('yaw',0)))@Rx(math.radians(LG.get('pitch',0)))@Rz(math.radians(LG.get('roll',0)))
+            D[ft]=LG['R'] if 'R' in LG else Ry(math.radians(LG.get('yaw',0)))@Rx(math.radians(LG.get('pitch',0)))@Rz(math.radians(LG.get('roll',0)))
             info['leg'+sd]=dict(knee=K,ankle=A2,short=short,kneeflex=math.degrees(math.acos(np.clip(dU@dL,-1,1))))
             # arms
             ua,la,hd='UpperArm.'+sd,'LowerArm.'+sd,'Hand.'+sd

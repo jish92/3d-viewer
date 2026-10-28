@@ -42,7 +42,7 @@
    "label": "Jackson running, swim brief",
    "url": "models/jackson-swim-brief.glb",
    "anim": "Run",
-   "note": "Same swim-brief model, 'Run' clip: looping 0.73 s run cycle in place (flight phase, knee drive, ~90° elbows pumping, forward lean, bounce, hip/shoulder counter-rotation), head stays upright; autoplays"
+   "note": "Same swim-brief model, 'Run' clip: looping 0.73 s run cycle in place (flight phase, knee drive, ~90\u00b0 elbows pumping, forward lean, bounce, hip/shoulder counter-rotation), head stays upright; autoplays"
   },
   {
    "id": "swimmb",
@@ -69,7 +69,7 @@
    "label": "Yoga: Deep Squat (malasana)",
    "url": "models/swimmer-yoga.glb",
    "anim": "Yoga_DeepSquat",
-   "note": "Swimmer one-piece model in a 9 s looping yoga Deep Squat (malasana): eases from standing into a full squat with prayer hands, holds ~2.4 s with gentle breathing, returns. Feet planted by IK (no sliding), subtle bust/glute spring bones; autoplays and loops forever. Same GLB also holds Walk, Run, MotionBricks; meshopt"
+   "note": "Deep squat (malasana) for the swimmer: motion generated with NVIDIA Kimodo from a text prompt and retargeted onto the 21-bone rig, with knee/hip helper bones for clean deep-bend deformation; stand, lower, hold ~3 s with gentle breathing, return; loops automatically, meshopt"
   },
   {
    "id": "textured",
@@ -81,7 +81,7 @@
    "id": "hunyuan",
    "label": "Jackson - Hunyuan3D",
    "url": "models/jackson-hunyuan3d.glb",
-   "note": "Optimized (159k faces, meshopt) — vertex colors",
+   "note": "Optimized (159k faces, meshopt) \u2014 vertex colors",
    "full": "models/jackson-hunyuan3d-full.glb"
   },
   {
