@@ -61,9 +61,9 @@ report={}
 import yk
 KO='/workspace/me3d/kim_out/'
 KIMO={'ksquat':('Yoga_DeepSquat',KO+'squat.npz',lambda:yk.squat_arms(rig,rest)),
- 'kwarrior2':('Yoga_WarriorII',KO+'warrior2.npz',lambda:None),'kdowndog':('Yoga_DownwardDog',KO+'downdog.npz',lambda:None),
- 'kpuppy':('Yoga_Puppy',KO+'puppy.npz',lambda:None),'khappybaby':('Yoga_HappyBaby',KO+'happybaby.npz',lambda:None),
- 'ktree':('Yoga_Tree',KO+'tree.npz',lambda:None),'kchild':('Yoga_Child',KO+'child.npz',lambda:None)}
+ 'kwarrior2':('Yoga_WarriorII',KO+'warrior2.npz',lambda:None),'kdowndog':('Yoga_DownwardDog',KO+'downdogb.npz',lambda:None),
+ 'kpuppy':('Yoga_Puppy',KO+'puppyb.npz',lambda:None),'khappybaby':('Yoga_HappyBaby',KO+'happybabyb.npz',lambda:None),
+ 'ktree':('Yoga_Tree',KO+'treeb.npz',lambda:None),'kchild':('Yoga_Child',KO+'childb.npz',lambda:None)}
 if os.environ.get('SMILE'):
     add_smile(body); body.data.shape_keys.key_blocks['Smile'].value=1.0
 if os.environ.get('PURGE'):
@@ -117,17 +117,40 @@ def arm_pass(clip,thr=0.010,iters=4,step=0.012):
         print('arm pass',it,'bad frames',bad)
         if bad==0: break
     for f in range(N): clip.Ps[f]=apply(f,off[f])
+LIFT=None
+def foot_pass(clip,iters=2,step=3):
+    global LIFT
+    N=clip.frames(); LIFT={sd:np.zeros(N) for sd in 'LR'}
+    for it in range(iters):
+        fr=list(range(0,N,step))+[N-1]; need={sd:[] for sd in 'LR'}
+        for f in fr:
+            P=getpl(clip,f); setpose(P); co,_=evalmesh()
+            for sd in 'LR': need[sd].append(max(0.0,-float(co[GS['Foot.'+sd],2].min())))
+        for sd in 'LR':
+            n=np.interp(np.arange(N),fr,need[sd]); k=2; pad=np.concatenate([np.repeat(n[:1],k),n,np.repeat(n[-1:],k)]); n=np.maximum(np.convolve(pad,np.ones(2*k+1)/(2*k+1),'valid'),n*0.0)
+            n=np.maximum(n,np.interp(np.arange(N),fr,need[sd])*0.9)
+            LIFT[sd]=LIFT[sd]+n
+        print('foot pass',it,{sd:round(float(max(need[sd])),4) for sd in 'LR'})
+def getpl(clip,f):
+    import copy
+    P=copy.deepcopy(clip.P(f/yclips.FPS))
+    if LIFT is not None:
+        for sd in 'LR': P['leg'+sd]['ankle']=np.asarray(P['leg'+sd]['ankle'],float)+np.array([0,LIFT[sd][f],0])
+    return P
 for key in WANT:
     if key in KIMO:
         nm,npz,bf=KIMO[key]; clip,kinfo=yk.make(nm,npz,rig,rest,blend_fn=bf()); print('kimo',kinfo['k'],kinfo['ka'],clip.hold); floor_pass(clip)
         if os.environ.get('ARMPASS'): arm_pass(clip)
-    else: clip=getattr(yclipdefs,'clip_'+key)(rig,rest)
+    else:
+        clip=getattr(yclipdefs,'clip_'+key)(rig,rest)
+        LIFT=None
+        if os.environ.get('FOOTPASS'): foot_pass(clip)
     N=clip.frames(); name=clip.name
     act=bpy.data.actions.new(name); arm.animation_data.action=act
     for t in arm.animation_data.nla_tracks: t.mute=True
     pel=[];chest=[];hipsD=[];chestD=[];info_all=[]; prevq={}
     for f in range(N):
-        P=clip.P(f/yclips.FPS)
+        P=getpl(clip,f)
         D,pos,info=rig.solve(P)
         bs,loc=basis_h(D,P['pelvis'])
         for n,Rm in bs.items():
