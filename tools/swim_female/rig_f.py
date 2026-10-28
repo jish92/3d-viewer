@@ -24,11 +24,11 @@ for sd,s in (('L',1),('R',-1)):
     bones+=[('UpperArm.'+sd,'Chest',sh,el,0.055),('LowerArm.'+sd,'UpperArm.'+sd,el,wr,0.045),('Hand.'+sd,'LowerArm.'+sd,wr,ft,0.035),
             ('UpperLeg.'+sd,'Hips',hip,kn,0.10),('LowerLeg.'+sd,'UpperLeg.'+sd,kn,an,0.065),('Foot.'+sd,'LowerLeg.'+sd,an,toe,0.07)]
 # bust helper bones (children of Chest)
-BC=np.array([0.095,1.275+LIFT,0.130])
+BC=np.array([0.099,1.264+LIFT,0.142])   # v2 (fuller) bust volume centre
 for sd,s in (('L',1),('R',-1)):
     h=BC*np.array([s,1,1]); bones.append(('Bust.'+sd,'Chest',tuple(h),tuple(h+np.array([0,0.05,0])),0.06))
 # glute helper bones (children of Hips)
-GC=np.array([0.085,0.89+LIFT,-0.095])
+GC=np.array([0.090,0.89+LIFT,-0.107])   # v2 (fuller) buttock centre
 for sd,s_ in (('L',1),('R',-1)):
     h=GC*np.array([s_,1,1]); bones.append(('Glute.'+sd,'Hips',tuple(h),tuple(h+np.array([0,0.05,0])),0.06))
 arm_d=bpy.data.armatures.new('Armature'); arm=bpy.data.objects.new('Armature',arm_d); bpy.context.scene.collection.objects.link(arm)
@@ -108,7 +108,7 @@ for j,n in enumerate(cn): Wf[:,names.index(n)]=Wall[:,j]
 for sd,s in (('L',1),('R',-1)):
     c=BC*np.array([s,1,1])
     d=np.linalg.norm((Vg-c)*np.array([1,1.0,1.0]),axis=1)
-    t=np.clip((0.115-d)/(0.115-0.035),0,1); wb=t*t*(3-2*t)
+    t=np.clip((0.125-d)/(0.125-0.038),0,1); wb=t*t*(3-2*t)
     fr=np.clip((Vg[:,2]-0.035)/0.04,0,1)
     tw=Wf[:,names.index('Chest')]+Wf[:,names.index('Spine')]
     wb=wb*fr*np.isin(part,['skin','suit'])*np.clip((tw-0.35)/0.4,0,1)
@@ -119,7 +119,7 @@ for sd,s in (('L',1),('R',-1)):
 for sd,s_ in (('L',1),('R',-1)):
     c=GC*np.array([s_,1,1])
     d=np.linalg.norm(Vg-c,axis=1)
-    t=np.clip((0.115-d)/(0.115-0.03),0,1); wg=t*t*(3-2*t)
+    t=np.clip((0.125-d)/(0.125-0.032),0,1); wg=t*t*(3-2*t)
     bk=np.clip((-Vg[:,2]-0.02)/0.04,0,1)
     tw=Wf[:,names.index('Hips')]+0.5*Wf[:,names.index('UpperLeg.'+sd)]
     wg=wg*bk*np.isin(part,['skin','suit'])*np.clip((tw-0.3)/0.4,0,1)*(Vg[:,0]*s_>-0.01)

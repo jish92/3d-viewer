@@ -43,3 +43,10 @@ Peaks: Walk 1.1 mm, MotionBricks 3.0 mm, Run 4.2 mm (`glute_check.py`: max edge 
 ## Mesh
 `simplify_swim.mjs` options: `LOCK_BOX` (full resolution in the bust and glute regions) and `LOCK_COLOR_EDGES=1` (keeps every vertex on a
 colour boundary so the trim stripes stay clean). About 127k faces / 693 KB after `optimize_anim.mjs`.
+
+## v2 figure (fuller bust and glutes/hips)
+`params.json` (= `params_v2.json`) changes vs v1 (`cupsize` 0.55->0.72, `hip-scale-horiz-incr` 0.2->0.33, new `buttocks-volume-incr` 0.5 and
+`measure-hips-circ-incr` 0.15). Waist (69.7->70.7 cm) and shoulders (41.7 cm) are kept; hips perimeter 93.2->100.4 cm, hip width 35.6->38.6 cm,
+hip depth 21.6->22.9 cm; bust apex projects ~1.6 cm further. `rebody.sh` regenerates body + joints + parts; `build_all.sh` then rigs/bakes.
+Helper centres re-fit in `rig_f.py` (bust (+-99, 1.264, 142) mm, glute (+-90, 0.89, -107) mm, radii +9 %); spring gains retuned ~1.3x with a
+slightly lower frequency (bust 3.7 Hz, glute 3.0 Hz). Peaks: bust Walk 1.9 / MB 5.8 / Run 9.1 mm; glute Walk 1.45 / MB 4.1 / Run 6.05 mm.

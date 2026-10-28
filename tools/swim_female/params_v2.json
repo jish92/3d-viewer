@@ -1,0 +1,28 @@
+{
+ "macro": {
+  "gender": 0.0,
+  "age": 0.5,
+  "muscle": 0.56,
+  "weight": 0.45,
+  "proportions": 0.6,
+  "height": 0.58,
+  "cupsize": 0.72,
+  "firmness": 0.7
+ },
+ "race": {
+  "asian": 0.2,
+  "caucasian": 0.5,
+  "african": 0.3
+ },
+ "details": {
+  "torso-vshape-incr": 0.3,
+  "torso-muscle-dorsi-incr": 0.35,
+  "L/upperarm-shoulder-muscle-incr": 0.35,
+  "L/upperarm-muscle-incr": 0.25,
+  "L/upperleg-muscle-incr": 0.2,
+  "L/lowerleg-muscle-incr": 0.25,
+  "hip-scale-horiz-incr": 0.33,
+  "buttocks-volume-incr": 0.5,
+  "measure-hips-circ-incr": 0.15
+ }
+}

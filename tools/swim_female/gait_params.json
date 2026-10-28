@@ -41,18 +41,18 @@
   "forearm_in_deg": 3.0
  },
  "bust": {
-  "freq_hz": 4.0,
+  "freq_hz": 3.7,
   "zeta": 0.45,
-  "peak_run_m": 0.007,
+  "peak_run_m": 0.0091,
   "walk_rel": 3.6,
-  "peak_walk_m": 0.0015
+  "peak_walk_m": 0.00195
  },
  "glute": {
-  "freq_hz": 3.2,
+  "freq_hz": 3.0,
   "zeta": 0.5,
-  "peak_run_m": 0.004,
-  "peak_mb_m": 0.003,
-  "peak_walk_m": 0.001,
+  "peak_run_m": 0.0057,
+  "peak_mb_m": 0.0041,
+  "peak_walk_m": 0.00135,
   "horiz_rel": 0.4
  }
 }
