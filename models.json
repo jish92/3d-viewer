@@ -25,6 +25,12 @@
       "note": "v4: v3 straightened model with cleaned collar/hem/nape/jaw edges (head size, position, rotation, neck and skin colour unchanged), meshopt"
     },
     {
+      "id": "walk",
+      "label": "Jackson, walking",
+      "url": "models/jackson-walk.glb",
+      "note": "Rigged v4 (17-bone humanoid skeleton, weighted to the T-shirt/shorts body, head rigid) with a looping 2.4 s walk-in-place animation; plays automatically, meshopt"
+    },
+    {
       "id": "textured",
       "label": "Jackson - Hunyuan3D textured",
       "url": "models/jackson-hunyuan3d-textured.glb",
