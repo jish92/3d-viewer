@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d12">
+<meta name="robots" content="noindex, nofollow">
+<title>3D Viewer</title>
+<style>
+  :root { --bg:#0b0d12; --panel:rgba(24,27,36,.72); --line:rgba(255,255,255,.12); --fg:#e8eaf0; --dim:#9aa0b0; --accent:#7c9cff; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; overflow:hidden; overscroll-behavior:none; }
+  model-viewer { position:fixed; inset:0; padding-bottom:0; width:100%; height:100%; background:radial-gradient(ellipse at 50% 35%, #232838 0%, #12151d 55%, #07080c 100%); --poster-color:transparent; outline:none; }
+  .bar { position:fixed; left:0; right:0; z-index:5; display:flex; gap:8px; align-items:center; padding:10px 12px; pointer-events:none; }
+  .bar > * { pointer-events:auto; }
+  .top { top:0; padding-top:calc(10px + env(safe-area-inset-top)); justify-content:space-between; }
+  .bottom { bottom:0; padding-bottom:calc(12px + env(safe-area-inset-bottom)); flex-direction:column; align-items:stretch; }
+  .title { font-weight:600; letter-spacing:.2px; padding:8px 14px; border-radius:999px; background:var(--panel); border:1px solid var(--line); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); max-width:60vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tools { display:flex; gap:8px; }
+  button, .btn { font:inherit; color:var(--fg); background:var(--panel); border:1px solid var(--line); border-radius:999px; padding:8px 14px; cursor:pointer; backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); display:inline-flex; align-items:center; gap:6px; white-space:nowrap; transition:background .15s,border-color .15s; }
+  button:hover { background:rgba(50,56,74,.8); }
+  button.on, .chip.active { border-color:var(--accent); background:rgba(124,156,255,.22); }
+  .icon { width:38px; height:38px; padding:0; justify-content:center; font-size:17px; }
+  .chips { display:flex; gap:8px; overflow-x:auto; padding:2px 2px 4px; scrollbar-width:none; justify-content:center; flex-wrap:wrap; }
+  .chips::-webkit-scrollbar { display:none; }
+  .hint { text-align:center; color:var(--dim); font-size:12.5px; text-shadow:0 1px 4px #000; }
+  #progress { position:fixed; top:0; left:0; height:3px; width:0; background:var(--accent); z-index:20; transition:width .2s, opacity .4s; }
+  #msg { position:fixed; inset:0; display:none; align-items:center; justify-content:center; text-align:center; padding:24px; z-index:4; color:var(--dim); pointer-events:none; }
+  #msg.show { display:flex; }
+  #msg b { color:var(--fg); display:block; font-size:18px; margin-bottom:6px; }
+  #drop { position:fixed; inset:12px; z-index:30; border:2px dashed var(--accent); border-radius:20px; background:rgba(11,13,18,.82); display:none; align-items:center; justify-content:center; font-size:20px; pointer-events:none; }
+  #drop.show { display:flex; }
+  #stats { position:fixed; right:12px; top:calc(60px + env(safe-area-inset-top)); z-index:5; font-size:12px; color:var(--dim); text-align:right; pointer-events:none; text-shadow:0 1px 4px #000; }
+  @media (max-width:520px) { .title { max-width:44vw; font-size:14px; } .lbl { display:none; } }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<model-viewer id="mv" style="top:40px;bottom:150px;height:auto"
+  camera-controls touch-action="pan-y" auto-rotate auto-rotate-delay="1500" rotation-per-second="18deg"
+  interaction-prompt="auto" shadow-intensity="1" shadow-softness="1" exposure="1.1"
+  environment-image="neutral" tone-mapping="commerce"
+  camera-orbit="0deg 82deg auto" min-camera-orbit="auto auto 5%" max-camera-orbit="auto auto 500%"
+  min-field-of-view="5deg" max-field-of-view="60deg" field-of-view="35deg"
+  alt="3D model viewer"></model-viewer>
+
+<div id="msg"><div><b id="msgTitle">Loading…</b><span id="msgSub"></span></div></div>
+<div id="drop">Drop a .glb / .gltf / .obj file</div>
+<div id="stats"></div>
+
+<div class="bar top">
+  <div class="title" id="title">3D Viewer</div>
+  <div class="tools">
+    <button id="rot" class="icon on" title="Auto-rotate" aria-label="Toggle auto-rotate"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg></button>
+    <button id="reset" class="icon" title="Reset view" aria-label="Reset view"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button>
+    <button id="share" class="icon" title="Copy link" aria-label="Copy link"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></button>
+    <button id="fs" class="icon" title="Fullscreen" aria-label="Fullscreen"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+  </div>
+</div>
+
+<div class="bar bottom">
+  <div class="chips" id="chips"></div>
+  <div class="chips">
+    <label class="btn" for="file">📂 <span>Open file</span></label>
+    <button id="url">🌐 <span>From URL</span></button>
+    <button id="full" style="display:none">⬆ <span>Full-res</span></button>
+    <input id="file" type="file" accept=".glb,.gltf,.obj,model/gltf-binary,model/gltf+json" hidden>
+  </div>
+  <div class="hint">Drag to rotate · pinch / scroll to zoom · two-finger drag or right-drag to pan · double-tap to recenter</div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "./vendor/three/three.module.min.js", "three/addons/": "./vendor/three/addons/" } }
+</script>
+<script type="module">
+import { ModelViewerElement } from "./vendor/model-viewer.min.js";
+ModelViewerElement.meshoptDecoderLocation = new URL("./vendor/meshopt_decoder.js", location.href).href;
+</script>
+<script type="module">
+const $ = s => document.querySelector(s);
+const mv = $('#mv'), chips = $('#chips');
+let list = [], current = null, blobUrl = null;
+
+const setTitle = t => { $('#title').textContent = t; document.title = t + ' · 3D Viewer'; };
+const msg = (t, s='') => { $('#msgTitle').textContent = t; $('#msgSub').textContent = s; $('#msg').classList.toggle('show', !!t); };
+const prog = (p) => { const e = $('#progress'); e.style.opacity = 1; e.style.width = (p*100)+'%'; if (p >= 1) setTimeout(()=>{ e.style.opacity = 0; setTimeout(()=>e.style.width='0',400); }, 300); };
+
+function setActive(id) { chips.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.id === id)); }
+function load(src, label, id) {
+  if (blobUrl && src !== blobUrl) { URL.revokeObjectURL(blobUrl); blobUrl = null; }
+  setActive(id || '');
+  setTitle(label); msg('Loading…'); prog(.05);
+  $('#stats').textContent = '';
+  $('#full').style.display = 'none';
+  mv.src = src;
+  const m = list.find(x => x.id === id);
+  current = { src, label, id };
+  if (m && m.full) { $('#full').style.display = ''; $('#full').dataset.full = m.full; $('#full').dataset.label = m.label + ' (full-res)'; }
+}
+mv.addEventListener('progress', e => prog(e.detail.totalProgress));
+mv.addEventListener('load', async () => {
+  msg(''); prog(1);
+  mv.cameraOrbit = '0deg 82deg auto'; mv.jumpCameraToGoal?.();
+  try { const d = mv.getDimensions(); $('#stats').textContent = `${d.x.toFixed(2)} × ${d.y.toFixed(2)} × ${d.z.toFixed(2)} units`; } catch {}
+});
+mv.addEventListener('error', e => { prog(1); const d = e.detail?.sourceError?.message || ''; msg('Couldn’t load model', d || 'Check the URL (it must allow CORS) or file format.'); });
+
+// ---- list of hosted models
+try {
+  const r = await fetch('models.json', { cache: 'no-cache' });
+  list = (await r.json()).models;
+} catch { list = []; }
+for (const m of list) {
+  const b = document.createElement('button'); b.className = 'chip'; b.dataset.id = m.id; b.textContent = m.label; b.title = m.note || '';
+  b.onclick = () => { history.replaceState(null, '', '?m=' + m.id); load(m.url, m.label, m.id); };
+  chips.appendChild(b);
+}
+
+// ---- file / blob loading (incl. OBJ -> GLB conversion in-browser)
+async function objToGlbUrl(objText) {
+  const THREE = await import('three');
+  const { OBJLoader } = await import('three/addons/loaders/OBJLoader.js');
+  const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
+  const obj = new OBJLoader().parse(objText);
+  obj.traverse(o => {
+    if (o.isMesh) {
+      if (!o.geometry.attributes.normal) o.geometry.computeVertexNormals();
+      const hasColor = !!o.geometry.attributes.color;
+      const old = o.material;
+      o.material = new THREE.MeshStandardMaterial({ color: old?.color ?? 0xdddddd, map: old?.map ?? null, vertexColors: hasColor, roughness: .7, metalness: 0 });
+    }
+  });
+  const buf = await new GLTFExporter().parseAsync(obj, { binary: true });
+  return URL.createObjectURL(new Blob([buf], { type: 'model/gltf-binary' }));
+}
+async function openFile(file) {
+  if (!file) return;
+  const name = file.name, ext = name.split('.').pop().toLowerCase();
+  history.replaceState(null, '', location.pathname);
+  try {
+    let url;
+    if (ext === 'obj') { msg('Converting OBJ…'); url = await objToGlbUrl(await file.text()); }
+    else if (ext === 'glb' || ext === 'gltf') url = URL.createObjectURL(file);
+    else { msg('Unsupported file', 'Use .glb, .gltf (self-contained) or .obj'); return; }
+    blobUrl = url; load(url, name.replace(/\.[^.]+$/, ''), '');
+  } catch (err) { console.error(err); msg('Couldn’t open file', String(err.message || err)); }
+}
+async function openUrl(url) {
+  const clean = url.split('?')[0].toLowerCase();
+  if (clean.endsWith('.obj')) {
+    msg('Converting OBJ…');
+    try { const t = await (await fetch(url)).text(); blobUrl = await objToGlbUrl(t); load(blobUrl, decodeURIComponent(clean.split('/').pop()).replace(/\.obj$/, ''), ''); }
+    catch (err) { msg('Couldn’t load OBJ', 'The server must allow CORS. ' + (err.message || '')); }
+  } else {
+    let label; try { label = decodeURIComponent(new URL(url, location.href).pathname.split('/').pop()) || 'Model'; } catch { label = 'Model'; }
+    load(url, label.replace(/\.(glb|gltf)$/i, ''), '');
+  }
+}
+$('#file').onchange = e => { openFile(e.target.files[0]); e.target.value = ''; };
+let dragN = 0;
+addEventListener('dragenter', e => { e.preventDefault(); dragN++; $('#drop').classList.add('show'); });
+addEventListener('dragleave', e => { e.preventDefault(); if (--dragN <= 0) { dragN = 0; $('#drop').classList.remove('show'); } });
+addEventListener('dragover', e => e.preventDefault());
+addEventListener('drop', e => { e.preventDefault(); dragN = 0; $('#drop').classList.remove('show'); openFile(e.dataTransfer.files[0]); });
+
+// ---- controls
+$('#rot').onclick = () => { const on = !mv.autoRotate; mv.autoRotate = on; $('#rot').classList.toggle('on', on); };
+$('#reset').onclick = () => { mv.cameraOrbit = '0deg 82deg auto'; mv.cameraTarget = 'auto auto auto'; mv.fieldOfView = '35deg'; mv.jumpCameraToGoal?.(); };
+$('#fs').onclick = () => { document.fullscreenElement ? document.exitFullscreen() : (document.documentElement.requestFullscreen?.() ?? mv.requestFullscreen?.()); };
+$('#share').onclick = async () => {
+  let link = location.href;
+  if (current && !current.id && !current.src.startsWith('blob:')) link = location.origin + location.pathname + '?model=' + encodeURIComponent(new URL(current.src, location.href).href);
+  try { if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) await navigator.share({ url: link, title: document.title }); else { await navigator.clipboard.writeText(link); msgToast('Link copied'); } }
+  catch { prompt('Copy link:', link); }
+};
+$('#url').onclick = () => { const u = prompt('Model URL (.glb / .gltf / .obj, must allow CORS):'); if (u) { history.replaceState(null, '', '?model=' + encodeURIComponent(u)); openUrl(u.trim()); } };
+$('#full').onclick = e => { const b = e.currentTarget; if (confirm('Load the full-resolution file (~9 MB, 454k faces)? May be slow on older phones.')) load(b.dataset.full, b.dataset.label, current?.id); };
+mv.addEventListener('dblclick', () => $('#reset').click());
+function msgToast(t) { const old = $('#share').title; const o=$('#share').innerHTML; $('#share').textContent = '✓'; setTimeout(() => $('#share').innerHTML = o, 1200); }
+
+// ---- initial model: ?model=<url> | ?m=<id> | first in list
+const q = new URLSearchParams(location.search);
+if (q.get('model')) openUrl(q.get('model'));
+else { const m = list.find(x => x.id === q.get('m')) || list[0]; if (m) load(m.url, m.label, m.id); else msg('No model', 'Drop a file or open one from a URL.'); }
+</script>
+</body>
+</html>

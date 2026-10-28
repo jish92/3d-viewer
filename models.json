@@ -1,0 +1,6 @@
+{
+  "models": [
+    { "id": "hunyuan", "label": "Jackson - Hunyuan3D", "url": "models/jackson-hunyuan3d.glb", "note": "Optimized (159k faces, meshopt) — vertex colors", "full": "models/jackson-hunyuan3d-full.glb" },
+    { "id": "triposr", "label": "Jackson - TripoSR", "url": "models/jackson-triposr.glb", "note": "TripoSR upper body" }
+  ]
+}
