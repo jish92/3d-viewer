@@ -14,8 +14,8 @@
   "spine_roll": 0.7,
   "chest_roll": 0.5,
   "arm_swing": 21,
-  "arm_add": 27,
-  "elbow_add": 3
+  "arm_add": 17,
+  "elbow_add": 0
  },
  "run": {
   "yaw": 8.4,
@@ -25,8 +25,8 @@
   "spine_roll": 0.75,
   "chest_roll": 0.5,
   "arm_swing": 40,
-  "arm_add": 41,
-  "elbow_add": 20
+  "arm_add": 30,
+  "elbow_add": 10
  },
  "mb": {
   "stride": 0.93,
@@ -37,8 +37,8 @@
   "chest_counter_yaw": 0.3,
   "spine_counter_roll": 0.45,
   "chest_counter_roll": 0.7,
-  "upper_arm_in_deg": 4.0,
-  "forearm_in_deg": 3.0
+  "upper_arm_in_deg": -5.0,
+  "forearm_in_deg": -5.0
  },
  "bust": {
   "freq_hz": 3.7,

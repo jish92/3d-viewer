@@ -33,6 +33,17 @@ def rz(a):
     c,s_=np.cos(a),np.sin(a); R=np.zeros(a.shape+(3,3)); R[...,0,0]=c;R[...,0,1]=-s_;R[...,1,0]=s_;R[...,1,1]=c;R[...,2,2]=1; return R
 def axang(ax,a): return Rot.from_rotvec(ax*a[:,None]).as_matrix()
 zup=np.array([0,0,1.])
+# ---- straight-ahead lock: remove the slowly varying heading (low-pass of the pelvis yaw, window = one stride) from every world rotation and from the world positions
+_lv=Pa[:,J('LeftLeg')]-Pa[:,J('RightLeg')]; _lv[:,2]=0
+_yw=np.unwrap(np.arctan2(_lv[:,1],_lv[:,0])); HEAD=uniform_filter1d(_yw,21,mode='nearest'); HEAD=HEAD-np.median(HEAD)
+print('heading removed: range deg %.2f..%.2f'%(np.degrees(HEAD.min()),np.degrees(HEAD.max())))
+_hp=(Pa[:,J('LeftLeg')]+Pa[:,J('RightLeg')])/2; _hs=uniform_filter1d(_hp[:,:2],21,axis=0,mode='nearest')
+def _rzp(a): 
+    c,s_=np.cos(a),np.sin(a); R=np.zeros(a.shape+(3,3)); R[...,0,0]=c;R[...,0,1]=-s_;R[...,1,0]=s_;R[...,1,1]=c;R[...,2,2]=1; return R
+_RH=_rzp(-HEAD)
+Pa=Pa.copy(); _rel=Pa[:,:,:2]-_hs[:,None,:]
+Pa[:,:,:2]=np.einsum('fab,fjb->fja',_RH[:,:2,:2],_rel)+_hs[:,None,:]
+for _b in list(Rw): Rw[_b]=np.einsum('fab,fbc->fac',_RH,Rw[_b])
 latv=Pa[:,J('LeftLeg')]-Pa[:,J('RightLeg')]; latv[:,2]=0; lat=unit(latv); fwd=np.cross(lat,zup)
 yaw=np.unwrap(np.arctan2(lat[:,1],lat[:,0])); osc=yaw-uniform_filter1d(yaw,21,mode='nearest')
 shv=Pa[:,J('LeftArm')]-Pa[:,J('RightArm')]; shv[:,2]=0; syaw=np.unwrap(np.arctan2(shv[:,1],shv[:,0])); sosc=syaw-uniform_filter1d(syaw,21,mode='nearest')
@@ -122,8 +133,9 @@ if LOOP:
     vel=np.gradient(feat,axis=0)*6
     F=np.concatenate([feat,vel],1)
     best=(1e9,0,0)
-    for s_ in range(int(0.9*30),int(1.6*30)):
-        for e_ in range(int(7.8*30),N-1):
+    LW=[float(x) for x in os.environ.get('LOOP_WIN','0.9,1.6,7.8,%g'%((N-1)/30)).split(',')]
+    for s_ in range(int(LW[0]*30),int(LW[1]*30)):
+        for e_ in range(int(LW[2]*30),min(N-1,int(LW[3]*30)+1)):
             d=np.linalg.norm(F[s_]-F[e_])
             if d<best[0]: best=(d,s_,e_)
     d,s_,e_=best; print('loop',s_,e_,'dist',round(d,3),'len s',(e_-s_)/30)
