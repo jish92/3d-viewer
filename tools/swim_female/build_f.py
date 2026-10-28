@@ -1,7 +1,7 @@
 import sys,json
 from common import *
 from geom import *
-import trimesh
+import trimesh,os
 from scipy.spatial import cKDTree
 STAGE=sys.argv[1] if len(sys.argv)>1 else 'full'
 OUT=sys.argv[2] if len(sys.argv)>2 else 'her_full.glb'
@@ -21,94 +21,156 @@ NAVY=np.array([2,5,32.]);RED=np.array([128,4,10.]);WHITE=np.array([196,196,198.]
 SKIN=np.array([190,112,78.])
 x,y,z=Vb[:,0],Vb[:,1],Vb[:,2]; ax=np.abs(x); sg=np.sign(x)
 nrm=vnormals(Vb,F)
-# ---------------- suit fields ----------------
+# ---------------- suit fields (racing one-piece: scoop front, spaghetti straps, racerback, competition leg cut) ----------------
 def interp(yy,pts): return np.interp(yy,[p[0] for p in pts],[p[1] for p in pts])
 PAR=json.load(open('suit_params.json'))
-# neckline (crew-high): front lower than back
-zf=smoothstep(z,-0.02,0.06)   # 1 front,0 back
-nl_front=PAR['neck_front']+PAR['neck_w']*(ax/0.07)**2
-nl_back=PAR['neck_back']+PAR['neck_w']*(ax/0.07)**2
-nl=zf*nl_front+(1-zf)*nl_back
-f_neck=(nl-y)*0.9
-xe=interp(y,[tuple(p) for p in PAR['armhole']])
-f_arm=(xe-ax)*0.85
+NAVY=np.array(PAR['navy'],float)
+# work on a once-subdivided copy of the body so clipped edges (scoop, armholes, leg lines) are smooth
+Vq,Fq,(Vbq,)=subdivide(Vb,F,[Vb],PAR['sub']); Nq=len(Vq)
+xq,yq,zq=Vq.T; axq=np.abs(xq); sgq=np.sign(xq); nrmq=vnormals(Vq,Fq)
+zf=smoothstep(zq,-0.02,0.06)   # 1 front,0 back
+# top edge: front = shallow scoop between the strap corners then a diagonal armhole line; back = racerback (armhole line rises toward the spine)
+cx,cy=PAR['neck_corner_x'],PAR['neck_corner_y']
+fr_pts=[(0.0,PAR['neck_center_y'])]+[tuple(p) for p in PAR['neck_mid']]+[tuple(p) for p in PAR['arm_front']]
+top_f=np.interp(axq,[p[0] for p in fr_pts],[p[1] for p in fr_pts])
+top_b=np.interp(axq,[p[0] for p in PAR['back_edge']],[p[1] for p in PAR['back_edge']])
+top=zf*top_f+(1-zf)*top_b
+f_top=(top-yq)*0.9
+xe=interp(yq,[tuple(p) for p in PAR['armhole']])
+f_arm=(xe-axq)*0.85
 # leg openings
 yc=PAR['leg_in']; yo=PAR['leg_out']; yfr=PAR['leg_front']
-lx=0.115*sg; dx=(x-lx)*sg; dz=z-0.02; r=np.maximum(np.hypot(dx,dz),1e-6)
+lx=0.115*sgq; dx=(xq-lx)*sgq; dz=zq-0.02; r=np.maximum(np.hypot(dx,dz),1e-6)
 uo=dx/r; uf=dz/r
 Lv=yc+(yo-yc)*(0.5+0.5*uo)+yfr*np.maximum(uf,0)-PAR['leg_back']*np.maximum(-uf,0)
-# near the centre line the 'outward' direction vanishes -> inner level
-cen=smoothstep(ax,0.0,0.05); Lv=yc+(Lv-yc)*cen
-f_leg=(y-Lv)*0.95
-fsuit=np.minimum.reduce([f_neck,f_arm,f_leg])
-fsuit=np.where(y<1.0,np.minimum(f_leg,f_arm),fsuit) if False else fsuit
+cen=smoothstep(axq,0.0,0.05); Lv=yc+(Lv-yc)*cen
+f_leg=(yq-Lv)*0.95
+fsuit=np.minimum.reduce([f_top,f_arm,f_leg])
 # compression smoothing of suit surface
-A=adjacency(F,N); deg=np.asarray(A.sum(1)).ravel()
-Vs=Vb.copy()
+A=adjacency(Fq,Nq); deg=np.asarray(A.sum(1)).ravel()
+Vs=Vq.copy()
 for _ in range(PAR['smooth_it']):
     for lam in (0.5,-0.53): Vs=Vs+lam*((A@Vs)/deg[:,None]-Vs)
-wsm=PAR['smooth_w']*(0.4+0.6*smoothstep(y,1.15,1.25)*(1-smoothstep(y,1.38,1.44))*smoothstep(z,0.0,0.05))
-Vsuit=Vb+(Vs-Vb)*wsm[:,None]
-Vsuit=Vsuit+nrm*PAR['thick']
-# clip suit
-attrs=[nrm,Vb]
-Vc,Fc,(nc,Vbc),fc,used=clip_mesh(Vsuit,F,fsuit,[nrm,Vb])
-# side line z(y) from lateral-facing vertices
-lat=(np.abs(nrm[:,0])>0.92)&(y>0.7)&(y<1.4)&(ax<0.3)
-bins=np.arange(0.7,1.41,0.05); zl=[]
-for a,b in zip(bins[:-1],bins[1:]):
-    m=lat&(y>=a)&(y<b); zl.append(z[m].mean() if m.sum() else np.nan)
-zl=np.array(zl); ok=~np.isnan(zl); ZS=((bins[:-1]+0.025)[ok],zl[ok]); print('side line z',zl.round(3))
-# colours: classes by distance to boundary
-def classify(P,fv,nv):
-    cls=np.zeros(len(P),int)+1  # navy
-    # edge trims: white outer stripe then red band (per boundary type approximated by fv)
-    tw,tr=PAR['trim_w'],PAR['trim_r']
-    cls=np.where(fv<tr,2,cls); cls=np.where(fv<tw,3,cls)
-    # side panel
-    inside=(fv>tr+0.004)
-    sidep=(np.abs(nv[:,0])>0.5)
-    ang=np.abs(P[:,2]-np.interp(P[:,1],ZS[0],ZS[1]))
-    sc=inside&sidep&(P[:,1]<PAR['stripe_top'])
-    cls=np.where(sc&(ang<PAR['stripe_w'][1]),3,cls); cls=np.where(sc&(ang<PAR['stripe_w'][0]),2,cls)
-    return cls
-cls=classify(Vc,fc,nc)
-# refine boundaries of classes by midpoint subdivision where classes differ (for crisp lines)
-def refine_cls(V_,F_,fv,nv,Vb_,iters=2):
-    for it in range(iters):
-        c=classify(V_,fv,nv); d=(c[F_].max(1)!=c[F_].min(1))
-        if d.sum()==0: break
-        # split longest edge of each differing triangle's all edges (1->4 split on flagged tris, with neighbours handled by conformity pass skipped: use full midpoint on all tri edges of flagged tris)
-        E=np.concatenate([F_[d][:,[0,1]],F_[d][:,[1,2]],F_[d][:,[2,0]]]); E.sort(1); E=np.unique(E,axis=0)
-        mp=(V_[E[:,0]]+V_[E[:,1]])/2; mf=(fv[E[:,0]]+fv[E[:,1]])/2; mn=(nv[E[:,0]]+nv[E[:,1]])/2; mb=(Vb_[E[:,0]]+Vb_[E[:,1]])/2
-        key={tuple(e):len(V_)+i for i,e in enumerate(E)}
-        V_=np.vstack([V_,mp]);fv=np.concatenate([fv,mf]);nv=np.vstack([nv,mn]);Vb_=np.vstack([Vb_,mb])
-        out=[]
-        for t in F_:
-            e01=key.get(tuple(sorted((t[0],t[1]))));e12=key.get(tuple(sorted((t[1],t[2]))));e20=key.get(tuple(sorted((t[2],t[0]))))
-            cnt=(e01 is not None)+(e12 is not None)+(e20 is not None)
-            a,b,c_=t
-            if cnt==0: out.append((a,b,c_))
-            elif cnt==3: out+= [(a,e01,e20),(b,e12,e01),(c_,e20,e12),(e01,e12,e20)]
-            elif cnt==1:
-                if e01 is not None: out+=[(a,e01,c_),(e01,b,c_)]
-                elif e12 is not None: out+=[(b,e12,a),(e12,c_,a)]
-                else: out+=[(c_,e20,b),(e20,a,b)]
-            else:
-                if e01 is None: out+=[(b,e12,a),(e12,e20,a),(e12,c_,e20)]
-                elif e12 is None: out+=[(c_,e20,b),(e20,e01,b),(e20,a,e01)]
-                else: out+=[(a,e01,c_),(e01,e12,c_),(e01,b,e12)]
-        F_=np.array(out)
-    return V_,F_,fv,nv,Vb_
-Vc,Fc,fc,nc,Vbc=refine_cls(Vc,Fc,fc,nc,Vbc,PAR['refine'])
-cls=classify(Vc,fc,nc)
-pal=np.array([[0,0,0],NAVY,RED,WHITE])
-Csuit=pal[cls]
-# skin body: drop faces whose verts are all well inside the suit
-deepin=fsuit>PAR['hide_depth']
+wsm=PAR['smooth_w']*(0.4+0.6*smoothstep(yq,1.15,1.25)*(1-smoothstep(yq,1.38,1.44))*smoothstep(zq,0.0,0.05))
+Vsuit=Vq+(Vs-Vq)*wsm[:,None]
+Vsuit=Vsuit+nrmq*PAR['thick']
+Vc,Fc,(nc,Vbc),fc,used=clip_mesh(Vsuit,Fq,fsuit,[nrmq,Vq])
+Csuit=np.tile(NAVY,(len(Vc),1))
+# ---- spaghetti straps: ribbons following the body surface (front corner -> over the shoulder -> racerback junction)
+from scipy.ndimage import gaussian_filter1d
+kdq=cKDTree(Vq)
+def surf(P,k=4):
+    d,i=kdq.query(P,k=k); w=1/(d+1e-4); w/=w.sum(1,keepdims=True)
+    n=(nrmq[i]*w[...,None]).sum(1); n/=np.linalg.norm(n,axis=1,keepdims=True)
+    v=(Vq[i]*w[...,None]).sum(1)
+    return P-((P-v)*n).sum(1,keepdims=True)*n, n
+def pick(x0,y0,mode):
+    m=(np.abs(xq-x0)<0.005)
+    if mode=='front': m&=(np.abs(yq-y0)<0.005)&(zq>0.0)&(zq<0.25); return Vq[m][np.argmax(Vq[m][:,2])]
+    if mode=='back':  m&=(np.abs(yq-y0)<0.005)&(zq<0.0)&(zq>-0.25); return Vq[m][np.argmin(Vq[m][:,2])]
+    m&=(zq>-0.07)&(zq<0.05)&(yq<1.48)&(yq>1.3); return Vq[m][np.argmax(Vq[m][:,1])]
+def catmull(P,n=140):
+    P=np.vstack([2*P[0]-P[1],P,2*P[-1]-P[-2]]); out=[]
+    for i in range(1,len(P)-2):
+        for t in np.linspace(0,1,n//(len(P)-3),endpoint=False):
+            t2,t3=t*t,t*t*t
+            out.append(0.5*((2*P[i])+(-P[i-1]+P[i+1])*t+(2*P[i-1]-5*P[i]+4*P[i+1]-P[i+2])*t2+(-P[i-1]+3*P[i]-3*P[i+1]+P[i+2])*t3))
+    out.append(P[-2]); return np.array(out)
+def strap(sg):
+    x1=PAR['strap_x'] if 'strap_x' in PAR else 0.09
+    pts=[pick(x1,PAR['neck_corner_y']-0.028,'front'),pick(x1,PAR['neck_corner_y'],'front'),pick(x1,PAR['neck_corner_y']+0.03,'front'),
+         pick(x1,0,'top'),pick(x1-0.012,1.41,'back'),pick(0.055,1.355,'back'),pick(0.026,1.318,'back'),pick(0.018,1.286,'back')]
+    P=np.array(pts); P[:,0]=np.abs(P[:,0])
+    C=catmull(P,160)
+    for _ in range(2):
+        C=np.c_[[gaussian_filter1d(C[:,k],2.0,mode='nearest') for k in range(3)]].T; C,_n=surf(C)
+    C,n=surf(C)
+    t=np.gradient(C,axis=0); t/=np.linalg.norm(t,axis=1,keepdims=True)
+    bvec=np.cross(t,n); bvec/=np.linalg.norm(bvec,axis=1,keepdims=True)
+    hw=PAR['strap_hw']; off=PAR['strap_off']
+    rows=[]
+    for s in (-1,0,1):
+        Q,nq=surf(C+bvec*hw*s*1.0); rows.append(Q+nq*off)
+    # taper last 1.5 cm into the panel (sink slightly) at both ends
+    V=np.concatenate([np.stack(rows,1)]).reshape(-1,3)   # [sample,3] -> flat
+    ns=len(C); idx=lambda i,j: i*3+j; F_=[]
+    for i in range(ns-1):
+        for j in range(2): F_+=[(idx(i,j),idx(i+1,j),idx(i+1,j+1)),(idx(i,j),idx(i+1,j+1),idx(i,j+1))]
+    F_=np.array(F_); V0=V.copy()
+    # outward winding
+    fn=np.cross(V[F_[:,1]]-V[F_[:,0]],V[F_[:,2]]-V[F_[:,0]]); cn=V[F_].mean(1); _,nn=surf(cn)
+    if (fn*nn).sum()<0: F_=F_[:,::-1]
+    Vbs,_=surf(V); 
+    if sg<0: V=V*np.array([-1,1,1]); Vbs=Vbs*np.array([-1,1,1]); F_=F_[:,::-1]
+    return V,F_,Vbs
+extraV=[];extraF=[];extraC=[];extraB=[]
+off_=len(Vc)
+for sg in (1,-1):
+    V_,F_,B_=strap(sg); extraV.append(V_);extraF.append(F_+off_);extraC.append(np.tile(NAVY,(len(V_),1)));extraB.append(B_); off_+=len(V_)
+# ---- small US flag patch (vertex colours; crisp: every stripe is its own strip of vertices)
+RED_F=np.array(PAR.get('flag_red',[128,6,12]),float); WHITE_F=np.array(PAR.get('flag_white',[205,205,208]),float); BLUE_F=np.array(PAR.get('flag_blue',[6,12,70]),float)
+kds=cKDTree(Vc)
+nsu=vnormals(Vc,Fc)
+def surf_s(P,k=6):
+    d,i=kds.query(P,k=k); w=1/(d+1e-4); w/=w.sum(1,keepdims=True)
+    n=(nsu[i]*w[...,None]).sum(1); n/=np.linalg.norm(n,axis=1,keepdims=True)
+    v=(Vc[i]*w[...,None]).sum(1)
+    return P-((P-v)*n).sum(1,keepdims=True)*n, n
+FSIDE=float(os.environ.get('FLAG_SIDE','-1'))   # -1: image-left in the front view (as in the reference photo) = wearer's right chest
+FW,FH=PAR['flag_w'],PAR['flag_h']
+c0=np.array([FSIDE*abs(PAR['flag_cx']),PAR['flag_cy'],0.0])
+# find the suit surface in front of the centre: highest-z suit vertex near (x,y)
+m=(np.abs(Vc[:,0]-c0[0])<0.01)&(np.abs(Vc[:,1]-c0[1])<0.01)&(Vc[:,2]>0.05); c0=Vc[m][np.argmax(Vc[m][:,2])]
+c0,nC=surf_s(c0[None]); c0=c0[0]; nC=nC[0]
+uax=np.array([1.0,0,0]); uax-=nC*(uax@nC); uax/=np.linalg.norm(uax); vax=np.cross(nC,uax); vax*=np.sign(vax[1])
+def FP(u,v): return c0+uax*(u-0.5)*FW+vax*(v-0.5)*FH      # u,v in [0,1], v up
+fV=[];fC=[]
+fF_list=[]
+def rect(u0,u1,v0,v1,col,nu):
+    base=sum(len(a) for a in fV); us=np.linspace(u0,u1,nu+1); P=np.array([FP(u,v) for v in (v0,v1) for u in us])
+    fV.append(P); fC.append(np.tile(col,(len(P),1))); rl=nu+1
+    for i in range(nu): fF_list.extend([(base+i,base+i+1,base+rl+i+1),(base+i,base+rl+i+1,base+rl+i)])
+CANT_U=0.40; CANT_V0=1-7/13
+for k in range(13):                       # k=0 top stripe (red)
+    v1=1-k/13; v0=1-(k+1)/13; col=RED_F if k%2==0 else WHITE_F
+    if k<7: rect(CANT_U,1.0,v0,v1,col,10)
+    else: rect(0.0,1.0,v0,v1,col,16)
+rect(0.0,CANT_U,CANT_V0,1.0,BLUE_F,8)
+# stars: 50 -> staggered rows of 6 and 5 (9 rows), tiny diamonds on the canton
+sw=0.00075
+star_start=sum(len(a) for a in fV); nstars=0
+for r_ in range(9):
+    for c_ in range(6 if r_%2==0 else 5):
+        uc=CANT_U*(0.0833+c_*0.1667+(0.0 if r_%2==0 else 0.0833)); vc=CANT_V0+(1-CANT_V0)*(0.07+0.86*r_/8.0)
+        cpt=FP(uc,vc); du=uax*sw; dv=vax*sw
+        base=sum(len(a) for a in fV); fV.append(np.array([cpt-dv,cpt+du,cpt+dv,cpt-du]))
+        fC.append(np.tile(WHITE_F,(4,1))); fF_list.extend([(base,base+1,base+2),(base,base+2,base+3)]); nstars+=1
+fVv=np.vstack(fV); fCv=np.vstack(fC); fFv=np.array(fF_list)
+# conform every flag vertex to the suit surface (+offset); stars sit 0.3 mm higher to avoid z-fighting
+Pf,nf=surf_s(fVv)
+FV=Pf+nf*PAR['flag_off']
+fn=np.cross(FV[fFv[:,1]]-FV[fFv[:,0]],FV[fFv[:,2]]-FV[fFv[:,0]]); nn=nf[fFv].mean(1)
+flip=(fn*nn).sum(1)<0; fFv[flip]=fFv[flip][:,[0,2,1]]
+# stars: the last vertices are the stars -> raise slightly
+FV[star_start:]+=nf[star_start:]*0.0005
+_,jj=kds.query(fVv); fB=Vbc[jj]
+extraV.append(FV);extraF.append(fFv+off_);extraC.append(fCv);extraB.append(fB); off_+=len(FV)
+Vc=np.vstack([Vc]+extraV); Fc=np.vstack([Fc]+extraF); Csuit=np.vstack([Csuit]+extraC); Vbc=np.vstack([Vbc]+extraB)
+nc=np.vstack([nc]+[np.zeros((len(v),3)) for v in extraV]); fc=np.concatenate([fc]+[np.ones(len(v)) for v in extraV])
+print('suit total verts',len(Vc),'tris',len(Fc),'flag tris',len(fFv),'flag centre',c0.round(3))
+# skin body: drop faces whose verts are all well inside the suit (original body mesh)
+xo,yo_,zo=Vb.T
+# evaluate suit field on the original vertices to hide covered skin
+zfo=smoothstep(zo,-0.02,0.06); axo=np.abs(xo); sgo=np.sign(xo)
+topo=zfo*np.interp(axo,[p[0] for p in fr_pts],[p[1] for p in fr_pts])+(1-zfo)*np.interp(axo,[p[0] for p in PAR['back_edge']],[p[1] for p in PAR['back_edge']])
+lxo=0.115*sgo; dxo=(xo-lxo)*sgo; dzo=zo-0.02; ro=np.maximum(np.hypot(dxo,dzo),1e-6); uoo=dxo/ro; ufo=dzo/ro
+Lvo=yc+(yo-yc)*(0.5+0.5*uoo)+yfr*np.maximum(ufo,0)-PAR['leg_back']*np.maximum(-ufo,0); Lvo=yc+(Lvo-yc)*smoothstep(axo,0.0,0.05)
+fsuit_o=np.minimum.reduce([(topo-yo_)*0.9,(interp(yo_,[tuple(p) for p in PAR['armhole']])-axo)*0.85,(yo_-Lvo)*0.95])
+deepin=fsuit_o>PAR['hide_depth']
 keepF=~deepin[F].all(1)
 Fskin=F[keepF]
 Cskin=np.tile(SKIN,(N,1))
+fsuit=fsuit_o
 np.savez('stage_body.npz',Vb=Vb,F=F,Fskin=Fskin,Vc=Vc,Fc=Fc,Csuit=Csuit,Cskin=Cskin,fsuit=fsuit,fc=fc,Vbc=Vbc,nc=nc,y0=y0)
 json.dump({k:v.tolist() for k,v in J.items()},open('joints_y.json','w'))
 meshes=[]

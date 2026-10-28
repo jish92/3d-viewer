@@ -1,7 +1,7 @@
 # Swimmer, one-piece (`swimher`) - build scripts
 
 Original fictional adult woman swimmer, built from an MPFB2 / MakeHuman (CC0) base body in headless Blender.
-Procedural vertex-coloured suit (navy, red/white trim, no logos), hair bun, eyes, brows, slides - no textures.
+Procedural vertex-coloured suit (navy racing one-piece with spaghetti straps, racerback and a small vertex-coloured US flag patch, no brand logos), hair bun, eyes, brows, slides - no textures.
 Scripts keep absolute paths under `/workspace/me3d/swim_female` (work dir of the original build) and need
 `/workspace/me3d/bpyvenv` (bpy 5.x) and `/workspace/me3d/venv` (numpy/scipy/trimesh); they are kept here as documentation / for re-runs.
 

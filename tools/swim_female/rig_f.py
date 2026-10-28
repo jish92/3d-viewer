@@ -82,9 +82,9 @@ for pn in ('suit','strap','sole'):
     m=(part==pn)
     if pn=='suit':
         # use underlying body positions
-        sv=db['Vbc']+np.array([0,LIFT,0]); _,ii=tr.query(sv); 
-        ids=np.where(m)[0]; Wsu=W[ii]
-        K=float(os.environ.get('SUIT_SHARP','2.5'))
+        sv=db['Vbc']+np.array([0,LIFT,0]); dk,ik=tr.query(sv,k=4); wk=1/(dk+2e-3); wk/=wk.sum(1,keepdims=True)   # interpolate the skin weights (the suit mesh is finer than the body) so the hem does not tear under strong hip flexion
+        ids=np.where(m)[0]; Wsu=(W[ik]*wk[...,None]).sum(1); Wsu/=np.maximum(Wsu.sum(1,keepdims=True),1e-9)
+        K=float(os.environ.get('SUIT_SHARP','1'))
         if K!=1:   # sharpen the hips/leg blend near the leg openings so the hem follows the thigh instead of being swallowed by it
             low=(Vg[ids,1]<0.98)[:,None]
             Wk=Wsu**K; Wk/=np.maximum(Wk.sum(1,keepdims=True),1e-9); Wsu=np.where(low,Wk,Wsu)
@@ -131,7 +131,8 @@ SIMP=os.environ.get('SIMP')
 if SIMP:
     import trimesh
     tm=trimesh.load(SIMP,force='mesh',process=False); V2=np.asarray(tm.vertices); F2=np.asarray(tm.faces)
-    dd,ii=cKDTree(Vg).query(V2); print('simp: verts',len(V2),'faces',len(F2),'max match dist',dd.max())
+    _cg=np.asarray(tm.visual.vertex_colors)[:,:3]/255.0 if hasattr(tm.visual,'vertex_colors') and len(tm.visual.vertex_colors)==len(V2) else np.zeros((len(V2),3))
+    _,ii=cKDTree(np.c_[Vg,np.clip(Cg,0,255)/255.0*0.01]).query(np.c_[V2,_cg*0.01]); dd=np.linalg.norm(Vg[ii]-V2,axis=1); print('simp: verts',len(V2),'faces',len(F2),'max match dist',dd.max())
     assert dd.max()<1e-4
     Vg=Vg[ii];Cg=Cg[ii];part=part[ii];Wf=Wf[ii];Fg=F2
 mesh=bpy.data.meshes.new('Her')
