@@ -27,6 +27,10 @@ for sd,s in (('L',1),('R',-1)):
 BC=np.array([0.095,1.275+LIFT,0.130])
 for sd,s in (('L',1),('R',-1)):
     h=BC*np.array([s,1,1]); bones.append(('Bust.'+sd,'Chest',tuple(h),tuple(h+np.array([0,0.05,0])),0.06))
+# glute helper bones (children of Hips)
+GC=np.array([0.085,0.89+LIFT,-0.095])
+for sd,s_ in (('L',1),('R',-1)):
+    h=GC*np.array([s_,1,1]); bones.append(('Glute.'+sd,'Hips',tuple(h),tuple(h+np.array([0,0.05,0])),0.06))
 arm_d=bpy.data.armatures.new('Armature'); arm=bpy.data.objects.new('Armature',arm_d); bpy.context.scene.collection.objects.link(arm)
 bpy.context.view_layer.objects.active=arm; arm.select_set(True); bpy.ops.object.mode_set(mode='EDIT')
 for n,p,h,t,r in bones:
@@ -37,7 +41,7 @@ bpy.ops.object.mode_set(mode='OBJECT')
 def seg_dist(P,a,b):
     ab=b-a; t=np.clip(((P-a)@ab)/(ab@ab),0,1); return np.linalg.norm(P-(a+t[:,None]*ab),axis=1)
 names=[b[0] for b in bones]; nb=len(bones)
-core=[b for b in bones if not b[0].startswith('Bust')]
+core=[b for b in bones if not b[0].startswith(('Bust','Glute'))]
 isskin=(part=='skin')
 Vs=Vg[isskin]
 segs=[]
@@ -80,7 +84,7 @@ for pn in ('suit','strap','sole'):
         # use underlying body positions
         sv=db['Vbc']+np.array([0,LIFT,0]); _,ii=tr.query(sv); 
         ids=np.where(m)[0]; Wsu=W[ii]
-        K=float(os.environ.get('SUIT_SHARP','1'))
+        K=float(os.environ.get('SUIT_SHARP','2.5'))
         if K!=1:   # sharpen the hips/leg blend near the leg openings so the hem follows the thigh instead of being swallowed by it
             low=(Vg[ids,1]<0.98)[:,None]
             Wk=Wsu**K; Wk/=np.maximum(Wk.sum(1,keepdims=True),1e-9); Wsu=np.where(low,Wk,Wsu)
@@ -111,6 +115,17 @@ for sd,s in (('L',1),('R',-1)):
     wb=np.minimum(wb,0.98)
     j=names.index('Bust.'+sd)
     Wf*=(1-wb)[:,None]; Wf[:,j]=wb
+# glute weights: skin+suit around the buttock centres, back half
+for sd,s_ in (('L',1),('R',-1)):
+    c=GC*np.array([s_,1,1])
+    d=np.linalg.norm(Vg-c,axis=1)
+    t=np.clip((0.115-d)/(0.115-0.03),0,1); wg=t*t*(3-2*t)
+    bk=np.clip((-Vg[:,2]-0.02)/0.04,0,1)
+    tw=Wf[:,names.index('Hips')]+0.5*Wf[:,names.index('UpperLeg.'+sd)]
+    wg=wg*bk*np.isin(part,['skin','suit'])*np.clip((tw-0.3)/0.4,0,1)*(Vg[:,0]*s_>-0.01)
+    wg=np.minimum(wg,0.95)
+    j=names.index('Glute.'+sd)
+    Wf*=(1-wg)[:,None]; Wf[:,j]=wg
 Wf/=np.maximum(Wf.sum(1,keepdims=True),1e-9)
 SIMP=os.environ.get('SIMP')
 if SIMP:

@@ -46,5 +46,13 @@
   "peak_run_m": 0.007,
   "walk_rel": 3.6,
   "peak_walk_m": 0.0015
+ },
+ "glute": {
+  "freq_hz": 3.2,
+  "zeta": 0.5,
+  "peak_run_m": 0.004,
+  "peak_mb_m": 0.003,
+  "peak_walk_m": 0.001,
+  "horiz_rel": 0.4
  }
 }

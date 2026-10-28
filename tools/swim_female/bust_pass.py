@@ -65,6 +65,56 @@ for name in ('Walk','Run','MotionBricks'):
     report[name]=pk; print(name,'bust displacement peak mm',round(pk*1000,2))
 arm.animation_data.action=None
 for t in tracks.values(): t.mute=False
+
+# ---------------- glute secondary motion (children of Hips) ----------------
+G=json.load(open('/workspace/me3d/swim_female/gait_params.json'))['glute']
+omg=2*math.pi*G['freq_hz']; ZG=G['zeta']
+def gseries(name):
+    only(name); st=tracks[name].strips[0]; f0,f1=int(st.frame_start),int(round(st.frame_end))
+    dup = name in ('Walk','Run'); frames=list(range(f0,f1+1-(1 if dup else 0)))
+    out={sd:{'P':[],'H':[],'Rp':[]} for sd in 'LR'}
+    for f in frames:
+        bpy.context.scene.frame_set(f); bpy.context.view_layer.update()
+        for sd in 'LR':
+            out[sd]['P'].append(np.array(pb['Glute.'+sd].head)); out[sd]['H'].append(np.array(pb['Hips'].head)); out[sd]['Rp'].append(np.array(pb['Hips'].matrix.to_3x3()))
+    return frames,{sd:{k:np.array(v) for k,v in o.items()} for sd,o in out.items()}
+def gspring(x):          # x: (n,) input coordinate series -> damped spring displacement driven by -accel
+    n=len(x); zz=np.concatenate([x]*5); t=np.arange(len(zz))/30.0
+    cs=CubicSpline(t,zz,bc_type='natural'); sub=4; dt=1/30/sub; d=0.0; v=0.0
+    tt=np.arange(0,5*n/30.0-1e-9,dt); dd=np.zeros(len(tt))
+    for i,tm in enumerate(tt):
+        a=float(cs(tm,2)); acc=-a-2*ZG*omg*v-omg*omg*d; v+=acc*dt; d+=v*dt; dd[i]=d
+    k0=3*n*sub; return dd[k0:k0+n*sub:sub]
+gres={}
+for name in ('Walk','Run','MotionBricks'):
+    frames,s=gseries(name); disp={}
+    for sd in 'LR':
+        P=s[sd]['P']; r=P-s[sd]['H']
+        dz=gspring(P[:,2])                                   # pelvis vertical acceleration (+ the point's own rise/fall)
+        dh=np.stack([gspring(r[:,0]),gspring(r[:,1])],1)     # acceleration of the point about the pelvis centre = response to yaw / tilt
+        disp[sd]=(dz,dh)
+    pv=max(np.abs(disp[sd][0]).max() for sd in 'LR'); ph=max(np.linalg.norm(disp[sd][1],axis=1).max() for sd in 'LR')
+    tgt={'Walk':G['peak_walk_m'],'Run':G['peak_run_m'],'MotionBricks':G['peak_mb_m']}[name]
+    gv=tgt/pv; gh=G['horiz_rel']*tgt/max(ph,1e-9)
+    gres[name]=(frames,s,disp,gv,gh); print('glute',name,'raw vertical peak mm',round(pv*1000,2),'raw horiz peak mm',round(ph*1000,2),'gains',round(gv,3),round(gh,3))
+grep={}
+Rbh=np.array(pb['Hips'].bone.matrix_local.to_3x3())
+for name in ('Walk','Run','MotionBricks'):
+    frames,s,disp,gv,gh=gres[name]; only(name)
+    arm.animation_data.action=bpy.data.actions[name]
+    for t in tracks.values(): t.mute=True
+    pk=0
+    for sd in 'LR':
+        b=pb['Glute.'+sd]; Rbb=np.array(b.bone.matrix_local.to_3x3()); dz,dh=disp[sd]
+        for i,f in enumerate(frames+([frames[0]+len(frames)] if name in('Walk','Run') else [])):
+            ii=i%len(frames); dw=np.array([dh[ii,0]*gh,dh[ii,1]*gh,dz[ii]*gv]); pk=max(pk,np.linalg.norm(dw))
+            loc=np.linalg.inv(Rbb)@Rbh@np.linalg.inv(s[sd]['Rp'][ii])@dw
+            b.location=Vector(loc); b.keyframe_insert('location',frame=f)
+        b.location=(0,0,0)
+    grep[name]=pk; print(name,'glute displacement peak mm',round(pk*1000,2))
+arm.animation_data.action=None
+for t in tracks.values(): t.mute=False
+json.dump(grep,open('/workspace/me3d/swim_female/out/glute_report.json','w'))
 bpy.ops.object.mode_set(mode='OBJECT')
 json.dump(report,open('/workspace/me3d/swim_female/out/bust_report.json','w'))
 bpy.ops.wm.save_as_mainfile(filepath=OUT); print('SAVED')

@@ -10,9 +10,9 @@ Pipeline: `mk_base.py` -> `build_f.py` (body + suit) -> `build_parts.py` (hair, 
 `bust_pass.py` bust spring bake, `export_f.py`) -> `node tools/optimize_anim.mjs` (DROP_MR=0.45) -> `models/swimmer-one-piece.glb`.
 
 ## Rig
-17 bones as the jammer models + `Bust.L/R` (children of Chest) = 19 bones. Capsule-distance weights with graph smoothing;
+17 bones as the jammer models + `Bust.L/R` (children of Chest) + `Glute.L/R` (children of Hips) = 21 bones. Capsule-distance weights with graph smoothing;
 the suit copies the weights of the skin underneath. `FRONT_HIP=0.9`: upper-front thigh skin/suit weight is moved toward the pelvis
-so the thigh does not cut through the suit at high knee lift.
+so the thigh does not cut through the suit at high knee lift. `SUIT_SHARP=2.5` sharpens the hips/leg weight blend of the suit near the leg openings.
 
 ## MotionBricks has no gender / style conditioning
 The SOMA/MotionBricks locomotion model is only conditioned on a heading/speed/style *mode* (idle, walk, jog ...) and its training
@@ -32,3 +32,14 @@ therefore applied during retargeting (`gait_params.json`, subtle on purpose):
 Two helper bones weighted to the bust (smoothstep radius 35-115 mm, front only, torso only). Damped spring
 (f = 4 Hz, zeta = 0.45) driven by the chest's vertical acceleration, baked into the keyframes. Peak: Walk 1.5 mm, MotionBricks 4.6 mm,
 Run 7.0 mm. Max edge-length change in the bust after deformation 2.5 mm (Run), p99 edge strain 7.6 %.
+
+## Glute secondary motion
+`Glute.L/R` are children of Hips at the buttock centres (+-85 mm, y 0.915, z -95 mm), weighted to the back of the skin and suit
+(smoothstep radius 30-115 mm, masked to the back and to Hips/UpperLeg weight). `bust_pass.py` bakes, per side, a damped spring
+(3.2 Hz, zeta 0.5) driven by the vertical acceleration of the glute point (pelvis vertical acceleration plus its own rise and fall) and a
+phase-lagged horizontal response to the point's acceleration about the pelvis centre (= pelvic yaw / tilt), scaled to 0.4x of the vertical peak.
+Peaks: Walk 1.1 mm, MotionBricks 3.0 mm, Run 4.2 mm (`glute_check.py`: max edge change 2.5 mm, p99 strain <5 %).
+
+## Mesh
+`simplify_swim.mjs` options: `LOCK_BOX` (full resolution in the bust and glute regions) and `LOCK_COLOR_EDGES=1` (keeps every vertex on a
+colour boundary so the trim stripes stay clean). About 127k faces / 693 KB after `optimize_anim.mjs`.

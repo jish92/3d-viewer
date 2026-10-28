@@ -14,6 +14,10 @@ for (const mesh of doc.getRoot().listMeshes()) for (const prim of mesh.listPrimi
   const lock = new Uint8Array(n); for (let v=0; v<n; v++) if (P[v*3+1] > 1.5) lock[v]=1;
   // optional LOCK_BOX=xmin,xmax,ymin,ymax,zmin,zmax (can be repeated with ';'): keep full resolution there (e.g. the bust area that a helper bone deforms)
   if (process.env.LOCK_BOX) for (const box of process.env.LOCK_BOX.split(';')) { const [x0,x1,y0,y1,z0,z1]=box.split(',').map(Number); for (let v=0; v<n; v++) { const x=P[v*3],y=P[v*3+1],z=P[v*3+2]; if (x>=x0&&x<=x1&&y>=y0&&y<=y1&&z>=z0&&z<=z1) lock[v]=1; } }
+  // optional LOCK_COLOR_EDGES=1: keep every vertex that sits on a colour boundary (trim stripes) so the trim edges stay clean
+  if (process.env.LOCK_COLOR_EDGES && process.env.LOCK_COLOR_EDGES!=='0') { const T=+process.env.LOCK_COLOR_EDGES; let nl=0; const dif=(a,b)=>{ for (let k=0;k<3;k++) if (Math.abs(A[a*3+k]-A[b*3+k])>0.25) return true; return false; };
+    for (let t=0; t<I.length; t+=3) for (let e=0;e<3;e++) { const a=I[t+e], b=I[t+(e+1)%3]; if (dif(a,b)) { if(!lock[a]){lock[a]=1;nl++;} if(!lock[b]){lock[b]=1;nl++;} } }
+    console.log('colour-edge verts locked', nl); }
   const target = Math.floor(+tf*3);
   const [res, err] = MeshoptSimplifier.simplifyWithAttributes(I, P, 3, A, 3, Array(3).fill(+(process.env.COLOR_W||2.0)), lock, target, 0.002, ['ErrorAbsolute']);
   console.log(mesh.getName(), 'faces', I.length/3, '->', res.length/3, 'err', err);
