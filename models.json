@@ -34,7 +34,15 @@
       "id": "swim",
       "label": "Jackson, swim brief",
       "url": "models/jackson-swim-brief.glb",
-      "note": "Olympic-style swimmer: sculpted bare athletic torso/arms/legs, navy competition brief with red/white trim, swim slides; same head as v4 (no cap/goggles); rigged (17 bones) with looping 2.4 s walk, autoplays; ~100k-face body, meshopt"
+      "note": "Olympic-style swimmer: sculpted bare athletic torso/arms/legs, navy competition brief with red/white trim, swim slides; same head as v4 (no cap/goggles); rigged (17 bones) with looping 2.4 s walk (file also contains a Run clip), autoplays; ~100k-face body, meshopt; updated with a natural front contour",
+      "anim": "Walk"
+    },
+    {
+      "id": "swimrun",
+      "label": "Jackson running, swim brief",
+      "url": "models/jackson-swim-brief.glb",
+      "anim": "Run",
+      "note": "Same swim-brief model, 'Run' clip: looping 0.73 s run cycle in place (flight phase, knee drive, ~90\u00b0 elbows pumping, forward lean, bounce, hip/shoulder counter-rotation), head stays upright; autoplays"
     },
     {
       "id": "jammer",

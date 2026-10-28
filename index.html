@@ -94,8 +94,9 @@ function load(src, label, id) {
   setTitle(label); msg('Loading…'); prog(.05);
   $('#stats').textContent = '';
   $('#full').style.display = 'none';
-  mv.src = src;
   const m = list.find(x => x.id === id);
+  if (m && m.anim) mv.setAttribute('animation-name', m.anim); else mv.removeAttribute('animation-name');
+  mv.src = src;
   current = { src, label, id };
   if (m && m.full) { $('#full').style.display = ''; $('#full').dataset.full = m.full; $('#full').dataset.label = m.label + ' (full-res)'; }
 }
