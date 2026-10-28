@@ -13,6 +13,12 @@
       "note": "Textured head + vertex-colored generic T-shirt/shorts body (AI-generated mannequin body, not a scan), meshopt (body decimated to 50%)"
     },
     {
+      "id": "tshirt2",
+      "label": "Jackson, T-shirt & shorts (straightened)",
+      "url": "models/jackson-tshirt-shorts-straight.glb",
+      "note": "v3: original T-shirt & shorts model with only the head rolled upright (head scale 100%, original skin colour, neck unchanged), meshopt (body decimated to 50%)"
+    },
+    {
       "id": "textured",
       "label": "Jackson - Hunyuan3D textured",
       "url": "models/jackson-hunyuan3d-textured.glb",
