@@ -19,6 +19,12 @@
       "note": "v3: original T-shirt & shorts model with only the head rolled upright (head scale 100%, original skin colour, neck unchanged), meshopt (body decimated to 50%)"
     },
     {
+      "id": "tshirt3",
+      "label": "Jackson, T-shirt & shorts (cleaned up)",
+      "url": "models/jackson-tshirt-shorts-clean.glb",
+      "note": "v4: v3 straightened model with cleaned collar/hem/nape/jaw edges (head size, position, rotation, neck and skin colour unchanged), meshopt"
+    },
+    {
       "id": "textured",
       "label": "Jackson - Hunyuan3D textured",
       "url": "models/jackson-hunyuan3d-textured.glb",
