@@ -40,10 +40,13 @@ xe=interp(yq,[tuple(p) for p in PAR['armhole']])
 f_arm=(xe-axq)*0.85
 # leg openings
 yc=PAR['leg_in']; yo=PAR['leg_out']; yfr=PAR['leg_front']
-lx=0.115*sgq; dx=(xq-lx)*sgq; dz=zq-0.02; r=np.maximum(np.hypot(dx,dz),1e-6)
-uo=dx/r; uf=dz/r
-Lv=yc+(yo-yc)*(0.5+0.5*uo)+yfr*np.maximum(uf,0)-PAR['leg_back']*np.maximum(-uf,0)
-cen=smoothstep(axq,0.0,0.05); Lv=yc+(Lv-yc)*cen
+def legline(ax_,z_):
+    # sporty beach-volleyball cut: very high leg lines (front diagonal to the iliac crest, back curving in to a narrow cheeky panel)
+    Lf=np.interp(ax_,[p[0] for p in PAR['leg_front_curve']],[p[1] for p in PAR['leg_front_curve']])
+    Lb=np.interp(ax_,[p[0] for p in PAR['leg_back_curve']],[p[1] for p in PAR['leg_back_curve']])
+    zz=smoothstep(z_,-0.01,0.05)
+    return zz*Lf+(1-zz)*Lb
+Lv=legline(axq,zq)
 f_leg=(yq-Lv)*0.95
 fsuit=np.minimum.reduce([f_top,f_arm,f_leg])
 # compression smoothing of suit surface
@@ -163,8 +166,7 @@ xo,yo_,zo=Vb.T
 # evaluate suit field on the original vertices to hide covered skin
 zfo=smoothstep(zo,-0.02,0.06); axo=np.abs(xo); sgo=np.sign(xo)
 topo=zfo*np.interp(axo,[p[0] for p in fr_pts],[p[1] for p in fr_pts])+(1-zfo)*np.interp(axo,[p[0] for p in PAR['back_edge']],[p[1] for p in PAR['back_edge']])
-lxo=0.115*sgo; dxo=(xo-lxo)*sgo; dzo=zo-0.02; ro=np.maximum(np.hypot(dxo,dzo),1e-6); uoo=dxo/ro; ufo=dzo/ro
-Lvo=yc+(yo-yc)*(0.5+0.5*uoo)+yfr*np.maximum(ufo,0)-PAR['leg_back']*np.maximum(-ufo,0); Lvo=yc+(Lvo-yc)*smoothstep(axo,0.0,0.05)
+Lvo=legline(axo,zo)
 fsuit_o=np.minimum.reduce([(topo-yo_)*0.9,(interp(yo_,[tuple(p) for p in PAR['armhole']])-axo)*0.85,(yo_-Lvo)*0.95])
 deepin=fsuit_o>PAR['hide_depth']
 keepF=~deepin[F].all(1)
