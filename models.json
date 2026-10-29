@@ -150,6 +150,13 @@
    "label": "Couple: Him (royal-blue brief)",
    "url": "models/couple-him.glb",
    "note": "Male in a royal-blue racing brief, natural smile baked in, standing still with arms relaxed at his sides. Rigged on a standard 22-bone skeleton with clean weights (no animation clip); meshopt"
+  },
+  {
+   "id": "yoga-happybaby2",
+   "label": "Yoga: Happy Baby v2 (red bikini, new rig)",
+   "url": "models/yoga-happybaby2.glb",
+   "anim": "Yoga_HappyBaby2",
+   "note": "New female (red triangle bikini, smiling, standard 22-bone rig) in a looping Happy Baby (Ananda Balasana): lowers from standing to sitting, rolls onto her back, draws her knees wide toward her armpits with vertical shins and soles to the sky, holds the outer edges of her feet and rocks gently side to side, then reverses back to standing. IK-posed with rigid thighs/shins; autoplays and loops; default view is from the head end (she starts standing with her back to the camera); bikini bottom is painted on the skin (top is a 3D shell); meshopt"
   }
  ]
 }
