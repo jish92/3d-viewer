@@ -131,6 +131,13 @@
    "url": "models/swimmer-yoga-happybaby.glb",
    "anim": "Yoga_HappyBaby",
    "note": "Swimmer in a looping Happy Baby pose: squats, sits, rolls back onto the floor, draws both knees wide toward the armpits and holds the outer edges of the feet with soles to the ceiling, gentle breathing and a soft relaxed smile (morph target), then returns to standing. Hand-posed with IK; autoplays and loops; view from the head end (3/4 or side); meshopt"
+  },
+  {
+   "id": "couple-rest",
+   "label": "Couple: Resting on his lap (beach)",
+   "url": "models/couple-rest.glb",
+   "anim": "Couple_Rest",
+   "note": "She walks up tired after a game, sits sideways on his lap in a beach chair, rests her head against his, his arm around her back, both smiling; then stands, walks away and turns back to the start so it loops. Two characters share one 44-bone skeleton and one animation; autoplays and loops; best from the front or front-left (3/4); meshopt"
   }
  ]
 }
