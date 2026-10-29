@@ -157,6 +157,13 @@
    "url": "models/yoga-happybaby2.glb",
    "anim": "Yoga_HappyBaby2",
    "note": "New female (red triangle bikini, smiling, standard 22-bone rig) in a looping Happy Baby (Ananda Balasana): lowers from standing to sitting, rolls onto her back, draws her knees wide toward her armpits with vertical shins and soles to the sky, holds the outer edges of her feet and rocks gently side to side, then reverses back to standing. IK-posed with rigid thighs/shins; autoplays and loops; default view is from the head end (she starts standing with her back to the camera); bikini bottom is painted on the skin (top is a 3D shell); meshopt"
+  },
+  {
+   "id": "yoga-puppy2",
+   "label": "Yoga: Puppy Pose v2 (red bikini, new rig)",
+   "url": "models/yoga-puppy2.glb",
+   "anim": "Yoga_Puppy2",
+   "note": "New female (red triangle bikini, smiling, standard 22-bone rig) in a looping Puppy Pose (Uttana Shishosana): lowers from standing through a squat to kneeling, folds to all fours, walks her hands forward into the extended puppy (hips stacked over knees, arms long on the floor, chest and head melting toward the mat), holds with a gentle breath, then reverses back to standing. IK-posed with rigid thighs/shins/arms (bone lengths constant); autoplays and loops; default view is a front 3/4; bikini bottom is painted on the skin (top is a 3D shell); meshopt"
   }
  ]
 }
