@@ -138,6 +138,18 @@
    "url": "models/couple-rest.glb",
    "anim": "Couple_Rest",
    "note": "She walks up tired after a game, sits sideways on his lap in a beach chair, rests her head against his, his arm around her back, both smiling; then stands, walks away and turns back to the start so it loops. Two characters share one 44-bone skeleton and one animation; autoplays and loops; best from the front or front-left (3/4); meshopt"
+  },
+  {
+   "id": "couple-her",
+   "label": "Couple: Her (red bikini)",
+   "url": "models/couple-her.glb",
+   "note": "Female in a red triangle bikini, natural smile baked in, standing still with arms relaxed at her sides. Rigged on a standard 22-bone skeleton with clean weights (no animation clip); meshopt"
+  },
+  {
+   "id": "couple-him",
+   "label": "Couple: Him (royal-blue brief)",
+   "url": "models/couple-him.glb",
+   "note": "Male in a royal-blue racing brief, natural smile baked in, standing still with arms relaxed at his sides. Rigged on a standard 22-bone skeleton with clean weights (no animation clip); meshopt"
   }
  ]
 }
