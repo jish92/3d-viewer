@@ -164,6 +164,12 @@
    "url": "models/yoga-puppy2.glb",
    "anim": "Yoga_Puppy2",
    "note": "New female (red triangle bikini, smiling, standard 22-bone rig) in a looping Puppy Pose (Uttana Shishosana): lowers from standing through a squat to kneeling, folds to all fours, walks her hands forward into the extended puppy (hips stacked over knees, arms long on the floor, chest and head melting toward the mat), holds with a gentle breath, then reverses back to standing. IK-posed with rigid thighs/shins/arms (bone lengths constant); autoplays and loops; default view is a front 3/4; bikini bottom is painted on the skin (top is a 3D shell); meshopt"
+  },
+  {
+   "id": "mpfb-her",
+   "label": "MPFB: Her (red bikini, static)",
+   "url": "models/female-mpfb.glb",
+   "note": "Adult female built with MPFB (MakeHuman): athletic natural body, slightly fuller bust with a natural resting shape, MakeHuman skin texture, eyes, lashes, brows, teeth, alpha-card hair. Thin, snug opaque red bikini fitted close to the body (about 1 mm clearance) with halter and hip ties. Standing still, arms relaxed; no animation, no pose sliders. Rigged on the 53-bone MPFB game-engine skeleton (individual finger bones); meshopt (quantized geometry, textures resized)"
   }
  ]
 }
