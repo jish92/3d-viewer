@@ -170,6 +170,12 @@
    "label": "MPFB: Her (red bikini, static)",
    "url": "models/female-mpfb.glb",
    "note": "Adult female built with MPFB (MakeHuman): athletic natural body, slightly fuller bust with a natural resting shape, MakeHuman skin texture, eyes, lashes, brows, teeth, alpha-card hair. Thin, snug opaque red bikini fitted close to the body (about 1 mm clearance) with halter and hip ties. Standing still, arms relaxed; no animation, no pose sliders. Rigged on the 53-bone MPFB game-engine skeleton (individual finger bones); meshopt (quantized geometry, textures resized)"
+  },
+  {
+   "id": "mpfb-her-v2",
+   "label": "MPFB: Her v2 (red bikini, static)",
+   "url": "models/female-mpfb-v2.glb",
+   "note": "Version 2 of the MPFB adult female: reshaped bust with soft rounded teardrop forms and a smooth chest/underbust transition (a little fuller, natural slightly lower resting shape), and a rebuilt thin opaque red bikini: moderate-cut, snug bottoms with side ties and a clean triangle halter top that follows the new bust shape (about 1 mm clearance). MakeHuman skin texture, eyes, lashes, brows, teeth, alpha-card hair. Standing still, arms relaxed; no animation. Rigged on the 53-bone MPFB game-engine skeleton; meshopt (quantized geometry, textures resized). The original is still available as mpfb-her"
   }
  ]
 }
